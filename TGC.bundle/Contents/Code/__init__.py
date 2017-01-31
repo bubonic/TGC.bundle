@@ -30,6 +30,8 @@ TODAY = datetime.date.today()
 def Start():
 
     HTTP.CacheTime = CACHE_1DAY
+    HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (iPad; CPU OS 7_0_4 like Mac OS X) AppleWebKit/537.51.1 (KHTML, like Gecko) Version/7.0 Mobile/11B554a Safari/9537.54'
+    HTTP.Headers['Accept-Language'] = 'en-us'
     
 class TGCAgent(Agent.TV_Shows):
     
@@ -263,6 +265,8 @@ class TGCAgent(Agent.TV_Shows):
 
         Log("def update()")
         show = metadata.id
+        metadata.title = show
+        Log("metadata.title: %s" % metadata.title)
         show = show.lower()
         show = show.replace(' ', '-')
         show = show.replace(':', '')
@@ -277,7 +281,7 @@ class TGCAgent(Agent.TV_Shows):
         
         #Log("Getting Rating")
         #r = self.getRating(html)
-        #rating = 2*r
+        #rating = 2*r    
         
         Log("calling urllib2 and visiting coursURL")
         request = urllib2.Request(courseURL)
@@ -292,26 +296,95 @@ class TGCAgent(Agent.TV_Shows):
         #season_num = media.season
         #episode_num = media.episode
         Log("Updating episode data")
-        if media is not None:
-            Log("Media is not None")
-            for season_num in media.seasons:
-                Log("Season Number:%s" % season_num)
-                for episode_num in media.seasons[str(season_num)].episodes:
-                    Log("Episode number:%s" % episode_num)
-                    episode = metadata.seasons[str(season_num)].episodes[str(episode_num)]
-                    Log("Running UpdateEpisode...see if this works")
-                    parser = self.MyLDESCParser()
-                    parser2 = self.MyLTITLEParser()
-                    parser.feed(html)
-                    parser2.feed((html))
-                    eSummaryData = parser.data
-                    eTitleData = parser2.data
-                    Log("Episode Title: %s" % eTitleData[0])
-                    Log("Episode summary %s" % eSummaryData[0].strip())
-                    episode.summary = str(eSummaryData[0].strip())
-                    episode.title = str(eTitleData[0])
-                    Log("episode.summary: %s" % episode.summary)
-                    Log("episode.title: %s" % episode.title)
+        @parallelize
+        def UpdateEpisodes(html=html):
+            Log("def UpdateEpisodes()")
+            if media is not None:
+                Log("Media is not None")
+                for season_num in media.seasons:
+                    Log("Season Number:%s" % season_num)
+                    episodes = media.seasons[str(season_num)].episodes
+                    Log("Episodes: %s" % episodes)
+                    for episode_num in media.seasons[str(season_num)].episodes:
+                        Log("Episode number:%s" % episode_num)
+                        if int(episode_num) != 0:
+                            episode = metadata.seasons[str(season_num)].episodes[str(episode_num)]
+                            Log("Running UpdateEpisode...")
+                            @task
+                            def UpdateEpisode(episode=episode, html=html, episode_num=episode_num):
+                                Log("def UpdateEpisode()")
+                                parser = self.MyLDESCParser()
+                                parser2 = self.MyLTITLEParser()
+                                parser.feed(html)
+                                parser2.feed((html))
+                                eSummaryData = parser.data
+                                eTitleData = parser2.data
+                                Log("Episode Title: %s" % eTitleData[int(episode_num) - 1])
+                                Log("Episode summary %s" % eSummaryData[int(episode_num) - 1].strip())
+                                episode.summary = str(eSummaryData[int(episode_num) - 1].strip())
+                                episode.title = str(eTitleData[int(episode_num) - 1 ])
+                                Log("episode.summary: %s" % episode.summary)
+                                Log("episode.title: %s" % episode.title)
+                                Log("Getting Lecturer")
+                                parser3 = self.MyLecturerParser()
+                                parser3.feed(html)
+                                lecturer = parser3.data[0]
+                                Log("Lecturer: %s" % lecturer)
+                                episode.directors = [] if lecturer is None else [lecturer]
+                                Log("episode.directors: %s" % episode.directors)
+                                Log("Setting episode dates")
+                                if episode_num == 1:
+                                    episode.originally_available_at = TODAY
+                                    Log("For episode: %s the date is %s" % (episode_num, episode.originally_available_at))
+                                else:
+                                    tdelta = datetime.timedelta(days=int(episode_num))
+                                    newDate = TODAY + tdelta
+                                    episode.originally_available_at = newDate
+                                    Log("For episode: %s the date is %s" % (episode_num, episode.originally_available_at))
+                        else:
+                            Log("I do not update episodes 0. No Information to retrive.")    
+                Log("getting Art images")
+                    
+                    
         #episode.rating = rating
-        Log("Done")
+        Log("Downloading Art")
+        @parallelize
+        def DownloadArt(html=html):
+            Log("DownloadArt()")
+            art = [ ]
+            Art = { }
+            soup = BeautifulSoup(html)
+            for link in soup.findAll("a", "cloud-zoom-gallery lightbox-group"):
+                art.append(link.get('href'))
+            Art['fanart'] = art[0]
+            Art['poster'] = art[1]
+            Log("Fanart URL: %s" % Art['fanart'])
+            Log("Poster URL: %s" % Art['poster'])
+            if Art['poster'] not in metadata.posters:
+                @task
+                def DownloadPoster(poster_url=Art['poster']):
+                    Log("Downloading posters")
+                    try:
+                        metadata.posters[poster_url] = Proxy.Preview(HTTP.Request(poster_url).content, sort_order=1)
+                    except: 
+                        Log("Download of poster image failed! - %s" % poster_url)
+                        pass
+            else:
+                Log("Poster art already in metadata.posters")
+            metadata.posters.validate_keys(Art['poster'])
+            
+            if Art['fanart'] not in metadata.art:
+                @task
+                def DownloadFanArt(fanart_url=Art['fanart']):
+                    Log("Downloading fanart")
+                    try:
+                        metadata.art[fanart_url] = Proxy.Preview(HTTP.Request(fanart_url).content, sort_order=1)
+                    except: 
+                        Log("Download of fanart image failed! - %s" % fanart_url)
+                        pass
+            else:
+                Log("Fanart already in metadata.art")                        
+            metadata.art.validate_keys(Art['fanart'])
+            
+        Log("Done")    
         return
