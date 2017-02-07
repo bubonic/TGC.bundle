@@ -4,3 +4,4 @@
 * Add more try/except error checking.
 * Use JSON to pull rating from TGC website (currently only dryscrape compatability).
 * Add checks for existing metadata so it's not updating the metadata every time.
+* Make to code less demanding on the PLEX server.

@@ -1,4 +1,4 @@
-# Requriements
+# Requirements
 
 For now, this PLEX Agent requires urllib/urllib2 and BeautifulSoup to run.
 

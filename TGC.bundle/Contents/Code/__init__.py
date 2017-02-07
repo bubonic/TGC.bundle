@@ -1,6 +1,7 @@
 from HTMLParser import HTMLParser
 from htmlentitydefs import name2codepoint
 from BeautifulSoup import BeautifulSoup 
+from sets import Set
 import datetime
 import sys
 
@@ -77,6 +78,8 @@ class TGCAgent(Agent.TV_Shows):
             self.data = []
             self.newdata = 0
             self.c = ''
+            self.c2 = ''
+            self.newdata2 = []
             self.switch = 0
 
         def handle_starttag(self, tag, attributes):
@@ -99,7 +102,7 @@ class TGCAgent(Agent.TV_Shows):
         def handle_data(self, data):
             if self.recording:
                 if data and data != 'x' and data != ' ':
-                    if self.switch == 1:
+                    if self.switch == 1 and self.c2 == ' ':
                         last = self.data.pop()
                         self.newdata = ' '. join([last, data])
                         self.data.append(self.newdata)
@@ -114,6 +117,22 @@ class TGCAgent(Agent.TV_Shows):
                 self.newdata = ' '.join([last,self.c])
                 self.data.append(self.newdata)
                 self.switch = 1
+
+        def handle_charref(self, name):
+            if name.startswith('x'):
+                self.c2 = chr(int(name[1:], 16))
+            else:
+                try:
+                    self.c2 = chr(int(name))
+                except (TypeError, ValueError):
+                    Log("unknown character")
+
+            if self.data and self.recording:
+                last = self.data.pop()
+                self.newdata2 = ' '.join([last,self.c2])
+                self.data.append(self.newdata2)
+                self.switch = 1
+                self.c2 = ' '
 
     class MyLDESCParser(HTMLParser):
         def __init__(self):
@@ -295,9 +314,20 @@ class TGCAgent(Agent.TV_Shows):
         #Log("Retrieving episode/season number")
         #season_num = media.season
         #episode_num = media.episode
+        parser = self.MyLDESCParser()
+        parser2 = self.MyLTITLEParser()
+        parser.feed(html)
+        parser2.feed((html))
+        parser3 = self.MyLecturerParser()
+        parser3.feed(html)
+        lecturer = str(parser3.data[0].strip())
+        lecturer = lecturer.replace(',', '')
+        lecturer = lecturer.replace('.', '')        
+        eSummaryData = parser.data
+        eTitleData = parser2.data
         Log("Updating episode data")
         @parallelize
-        def UpdateEpisodes(html=html):
+        def UpdateEpisodes(html=html, eSummaryData=eSummaryData, eTitleData=eTitleData, lecturer=lecturer):
             Log("def UpdateEpisodes()")
             if media is not None:
                 Log("Media is not None")
@@ -311,28 +341,28 @@ class TGCAgent(Agent.TV_Shows):
                             episode = metadata.seasons[str(season_num)].episodes[str(episode_num)]
                             Log("Running UpdateEpisode...")
                             @task
-                            def UpdateEpisode(episode=episode, html=html, episode_num=episode_num):
+                            def UpdateEpisode(episode=episode, html=html, episode_num=episode_num, eSummaryData=eSummaryData, eTitleData=eTitleData, lecturer=lecturer):
                                 Log("def UpdateEpisode()")
-                                parser = self.MyLDESCParser()
-                                parser2 = self.MyLTITLEParser()
-                                parser.feed(html)
-                                parser2.feed((html))
-                                eSummaryData = parser.data
-                                eTitleData = parser2.data
-                                Log("Episode Title: %s" % eTitleData[int(episode_num) - 1])
-                                Log("Episode summary %s" % eSummaryData[int(episode_num) - 1].strip())
-                                episode.summary = str(eSummaryData[int(episode_num) - 1].strip())
-                                episode.title = str(eTitleData[int(episode_num) - 1 ])
-                                Log("episode.summary: %s" % episode.summary)
-                                Log("episode.title: %s" % episode.title)
-                                Log("Getting Lecturer")
-                                parser3 = self.MyLecturerParser()
-                                parser3.feed(html)
-                                lecturer = parser3.data[0]
+                                lecture_len = len(eSummaryData)
+                                lecture_len2 = len(eTitleData)
+                                Log("Lecture array length: %s" % lecture_len)
+                                if int(episode_num) <= lecture_len:
+                                    Log("Episode Title: %s" % eTitleData[int(episode_num) - 1])
+                                    Log("Episode summary %s" % eSummaryData[int(episode_num) - 1].strip())
+                                    episode.summary = str(eSummaryData[int(episode_num) - 1].strip())
+                                    episode.title = str(eTitleData[int(episode_num) - 1 ])
+                                    Log("episode.summary: %s" % episode.summary)
+                                    Log("episode.title: %s" % episode.title)
+                                    Log("Getting Lecturer")
+
                                 Log("Lecturer: %s" % lecturer)
-                                episode.directors = [] if lecturer is None else [lecturer]
+                                episode.directors.clear()
+                                episode.writers.clear()
+                                episode.directors.add(lecturer)
+                                episode.writers.add(lecturer)
                                 Log("episode.directors: %s" % episode.directors)
-                                Log("Setting episode dates")
+                                Log("episode.writers: %s" % episode.writers)
+                                Log("Setting episode dates")    
                                 if episode_num == 1:
                                     episode.originally_available_at = TODAY
                                     Log("For episode: %s the date is %s" % (episode_num, episode.originally_available_at))
