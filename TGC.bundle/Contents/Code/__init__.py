@@ -1,7 +1,6 @@
 from HTMLParser import HTMLParser
 from htmlentitydefs import name2codepoint
 from BeautifulSoup import BeautifulSoup 
-from sets import Set
 import datetime
 import sys
 
@@ -41,9 +40,6 @@ class TGCAgent(Agent.TV_Shows):
     primary_provider = True
     accepts_from = ['com.plexapp.agents.localmedia']
 
-#    accepts_from = ['com.plexapp.agents.localmedia']
-    
-    
     class MyDESCParser(HTMLParser):
         def __init__(self):
             HTMLParser.__init__(self)
@@ -116,7 +112,8 @@ class TGCAgent(Agent.TV_Shows):
                 last = self.data.pop()
                 self.newdata = ' '.join([last,self.c])
                 self.data.append(self.newdata)
-                self.switch = 1
+                self.switch = 1 
+                self.c2 = ' '
 
         def handle_charref(self, name):
             if name.startswith('x'):
@@ -372,7 +369,7 @@ class TGCAgent(Agent.TV_Shows):
                                     episode.originally_available_at = newDate
                                     Log("For episode: %s the date is %s" % (episode_num, episode.originally_available_at))
                         else:
-                            Log("I do not update episodes 0. No Information to retrive.")    
+                            Log("I do not update episodes 0. No Information to retrieve.")    
                 Log("getting Art images")
                     
                     
