@@ -20,5 +20,9 @@ Example:
 
 Games People Play: Game Theory in Life, Business, and Beyond S01E01 The World of Game Theory.mp4
 
+or
+
+Change and Motion: Calculus Made Clear, 2nd Edition S01E10 Blah.avi
+
 Create a TV Shows Library in PLEX and set the primary agent to TGC. 
-Add directories to your library and enjoy!
+Add directories *individually* (not directories of directories) to your library and enjoy!
