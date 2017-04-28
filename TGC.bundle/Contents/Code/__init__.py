@@ -86,6 +86,7 @@ class TGCAgent(Agent.TV_Shows):
                 return
             for name, value in attributes:
                 if name == 'class' and value == 'lecture-title':
+                    self.switch = 0
                     break
             else:
                 return
@@ -98,7 +99,7 @@ class TGCAgent(Agent.TV_Shows):
         def handle_data(self, data):
             if self.recording:
                 if data and data != 'x' and data != ' ':
-                    if self.switch == 1 and self.c2 == ' ':
+                    if self.switch == 1:
                         last = self.data.pop()
                         self.newdata = ' '. join([last, data])
                         self.data.append(self.newdata)
@@ -113,7 +114,6 @@ class TGCAgent(Agent.TV_Shows):
                 self.newdata = ' '.join([last,self.c])
                 self.data.append(self.newdata)
                 self.switch = 1 
-                self.c2 = ' '
 
         def handle_charref(self, name):
             if name.startswith('x'):
@@ -129,7 +129,6 @@ class TGCAgent(Agent.TV_Shows):
                 self.newdata2 = ' '.join([last,self.c2])
                 self.data.append(self.newdata2)
                 self.switch = 1
-                self.c2 = ' '
 
     class MyLDESCParser(HTMLParser):
         def __init__(self):
@@ -287,6 +286,8 @@ class TGCAgent(Agent.TV_Shows):
         show = show.replace(' ', '-')
         show = show.replace(':', '')
         show = show.replace(',', '')
+            show = show.replace('"', ''
+        show = show.replace('?', '')
         courseURL = ''.join([TGC_COURSE_URL, show, '.html'])
         Log("update() CourseURL: %s" % courseURL)
         Log("Calling dryscrape and visiting coursURL")
