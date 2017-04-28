@@ -77,7 +77,7 @@ class TGCAgent(Agent.TV_Shows):
             self.c2 = ''
             self.newdata2 = []
             self.switch = 0
-# fixed the bug
+
         def handle_starttag(self, tag, attributes):
             if tag != 'div':
                 return
