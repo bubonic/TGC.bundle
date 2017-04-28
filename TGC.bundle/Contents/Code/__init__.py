@@ -286,7 +286,7 @@ class TGCAgent(Agent.TV_Shows):
         show = show.replace(' ', '-')
         show = show.replace(':', '')
         show = show.replace(',', '')
-            show = show.replace('"', ''
+        #show = show.replace('"', ''
         show = show.replace('?', '')
         courseURL = ''.join([TGC_COURSE_URL, show, '.html'])
         Log("update() CourseURL: %s" % courseURL)
