@@ -6,6 +6,7 @@ For now, this PLEX Agent requires urllib/urllib2 and BeautifulSoup to run.
 
 Download the complete contents of this git project (git clone) and copy the bundle (TGC.bundle) to your PLEX plug-ins directory.
 The appropriate plug-ins directory can be found on the PLEX website (https://support.plex.tv/hc/en-us/articles/201106098-How-do-I-find-the-Plug-Ins-folder-)
+Besure to restart the PLEX server after copying the Agent plug-in. 
 
 # Usage
 
@@ -25,4 +26,10 @@ or
 Change and Motion: Calculus Made Clear, 2nd Edition S01E10 Blah.avi
 
 Create a TV Shows Library in PLEX and set the primary agent to TGC. 
+i.e.,
+http://i.imgur.com/MutBhRy.png 
+http://i.imgur.com/daSfKiv.png
+ 
 Add directories *individually* (not directories of directories) to your library and enjoy!
+i.e., 
+http://i.imgur.com/StVCbzk.png
