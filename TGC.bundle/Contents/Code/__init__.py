@@ -1,9 +1,9 @@
-from HTMLParser import HTMLParser
+from HTMLParser import HTMLParser, HTMLParseError
 from htmlentitydefs import name2codepoint
 from BeautifulSoup import BeautifulSoup 
 import datetime
 import sys
-
+import os
 
 try:
     # For Python 3.0 and later
@@ -107,13 +107,28 @@ class TGCAgent(Agent.TV_Shows):
                     else:
                         self.data.append(data)
 
-        def handle_entityref(self, name):
-            self.c = unichr(name2codepoint[name])
+        def handle_entityref(self, ref):
+            # called for each entity reference, e.g. for "&copy;", ref will be "copy"
+            if ref in ('lt', 'gt', 'quot', 'amp', 'apos'):
+                text = '&%s;' % ref
+            else:
+                # entity resolution graciously donated by Aaron Swartz
+                def name2cp(k):
+                    import htmlentitydefs
+                    k = htmlentitydefs.entitydefs[k]
+                    if k.startswith("&#") and k.endswith(";"):
+                        return int(k[2:-1]) # not in latin-1
+                    return ord(k)
+                try: name2cp(ref)
+                except KeyError: text = "&%s;" % ref
+                else: text = unichr(name2cp(ref)).encode('utf-8')
+            self.c = text
             if self.data and self.recording:
                 last = self.data.pop()
                 self.newdata = ' '.join([last,self.c])
                 self.data.append(self.newdata)
-                self.switch = 1 
+                #print "Newdata:     ", self.newdata
+                self.switch = 1
 
         def handle_charref(self, name):
             if name.startswith('x'):
@@ -175,13 +190,29 @@ class TGCAgent(Agent.TV_Shows):
                         self.data.append(data)
 
 
-        def handle_entityref(self, name):
-            self.c = unichr(name2codepoint[name])
+        def handle_entityref(self, ref):
+            # called for each entity reference, e.g. for "&copy;", ref will be "copy"
+            if ref in ('lt', 'gt', 'quot', 'amp', 'apos'):
+                text = '&%s;' % ref
+            else:
+                # entity resolution graciously donated by Aaron Swartz
+                def name2cp(k):
+                    import htmlentitydefs
+                    k = htmlentitydefs.entitydefs[k]
+                    if k.startswith("&#") and k.endswith(";"):
+                        return int(k[2:-1]) # not in latin-1
+                    return ord(k)
+                try: name2cp(ref)
+                except KeyError: text = "&%s;" % ref
+                else: text = unichr(name2cp(ref)).encode('utf-8')
+            self.c = text
             if self.data and self.recording:
                 last = self.data.pop()
                 self.newdata = ' '.join([last,self.c])
                 self.data.append(self.newdata)
+                #print "Newdata:     ", self.newdata
                 self.switch = 1
+
 
         def handle_charref(self, name):
             if name.startswith('x'):
@@ -316,15 +347,24 @@ class TGCAgent(Agent.TV_Shows):
         #Log("Retrieving episode/season number")
         #season_num = media.season
         #episode_num = media.episode
+        Log("Calling MyLDESCParser()")
         parser = self.MyLDESCParser()
+        Log("Calling MyLTITLEarser()")
         parser2 = self.MyLTITLEParser()
+        Log("Calling MyLDESCParser().feed(html)")
         parser.feed(html)
+        Log("Calling MyLTITLEarser().feed(html)")
         parser2.feed((html))
+        Log("Calling MyLecturerParser()")
         parser3 = self.MyLecturerParser()
+        Log("Calling MyLecturerParser().feed(html)")
         parser3.feed(html)
-        lecturer = str(parser3.data[0].strip())
-        lecturer = lecturer.replace(',', '')
-        lecturer = lecturer.replace('.', '')        
+        if parser3.data:
+            lecturer = str(parser3.data[0].strip())
+            lecturer = lecturer.replace(',', '')
+            lecturer = lecturer.replace('.', '') 
+        else:
+            lecturer = "me"       
         eSummaryData = parser.data
         eTitleData = parser2.data
         Log("Updating episode data")
