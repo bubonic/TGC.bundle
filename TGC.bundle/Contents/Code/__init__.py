@@ -285,6 +285,7 @@ class TGCAgent(Agent.TV_Shows):
     
     def search(self, results, media, lang, manual=False):
         id2 = media.show
+        id2 = id2.replace("'", ' ')
         show = media.show.lower()
         show = show.replace(' ', '-')
         show = show.replace(':', '')
@@ -314,7 +315,8 @@ class TGCAgent(Agent.TV_Shows):
 
         Log("def update()")
         show = metadata.id
-        metadata.title = show
+        mdatashow = show.replace(' s ', "'s")
+        metadata.title = mdatashow
         Log("metadata.title: %s" % metadata.title)
         show = show.lower()
         show = show.replace(' ', '-')
