@@ -315,7 +315,7 @@ class TGCAgent(Agent.TV_Shows):
 
         Log("def update()")
         show = metadata.id
-        mdatashow = show.replace(' s ', "'s")
+        mdatashow = show.replace(' s ', "'s ")
         metadata.title = mdatashow
         Log("metadata.title: %s" % metadata.title)
         show = show.lower()
