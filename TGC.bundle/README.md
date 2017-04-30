@@ -25,11 +25,12 @@ or
 
 Change and Motion: Calculus Made Clear, 2nd Edition S01E10 Blah.avi
 
-Create a TV Shows Library in PLEX and set the primary agent to TGC. 
-i.e.,
-http://i.imgur.com/MutBhRy.png 
-http://i.imgur.com/daSfKiv.png
+Create a TV Shows Library in PLEX and set the primary agent to TGC.  i.e.,
+
+![](http://i.imgur.com/MutBhRy.png "") 
+
+![](http://i.imgur.com/daSfKiv.png "")
  
-Add directories *individually* (not directories of directories) to your library and enjoy!
-i.e., 
-http://i.imgur.com/StVCbzk.png
+Add directories *individually* (not directories of directories) to your library and enjoy! i.e., 
+
+![](http://i.imgur.com/StVCbzk.png "")
