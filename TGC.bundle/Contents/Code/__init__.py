@@ -363,8 +363,8 @@ class TGCAgent(Agent.TV_Shows):
         parser3.feed(html)
         if parser3.data:
             lecturer = str(parser3.data[0].strip())
-            lecturer = lecturer.replace(',', '')
-            lecturer = lecturer.replace('.', '') 
+            #lecturer = lecturer.replace(',', '')
+            #lecturer = lecturer.replace('.', '') 
         else:
             lecturer = "me"       
         eSummaryData = parser.data
@@ -400,12 +400,17 @@ class TGCAgent(Agent.TV_Shows):
                                     Log("Getting Lecturer")
 
                                 Log("Lecturer: %s" % lecturer)
+                                #episode.directors.clear()
+                                #episode.writers.clear()
+                                #episode.directors.add(lecturer)
+                                #episode.writers.add(lecturer)
                                 episode.directors.clear()
-                                episode.writers.clear()
-                                episode.directors.add(lecturer)
-                                episode.writers.add(lecturer)
-                                Log("episode.directors: %s" % episode.directors)
-                                Log("episode.writers: %s" % episode.writers)
+                                meta_role = episode.directors.new()
+                                meta_role.name = lecturer # role name
+                                meta_role.role = None # actor name
+                                meta_role.photo = None #url of actor photo
+                                #Log("episode.directors: %s" % episode.directors)
+                                #Log("episode.writers: %s" % episode.writers)
                                 Log("Setting episode dates")    
                                 if episode_num == 1:
                                     episode.originally_available_at = TODAY
