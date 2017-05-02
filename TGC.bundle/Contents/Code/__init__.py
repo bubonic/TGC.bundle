@@ -4,6 +4,7 @@ from BeautifulSoup import BeautifulSoup
 import datetime
 import sys
 import os
+import re
 
 try:
     # For Python 3.0 and later
@@ -366,7 +367,13 @@ class TGCAgent(Agent.TV_Shows):
             #lecturer = lecturer.replace(',', '')
             #lecturer = lecturer.replace('.', '') 
         else:
-            lecturer = "me"       
+            lecturer = "me"
+        #soup = BeautifulSoup(html)
+        #pBlock = soup.find("div", { "class" : "prof-icon hide-below-768"})
+        #pPhotoblock = pBlock['style']
+        #pPhotoURL = re.findall(r"'(.*?)'", pPhotoblock)
+        #for pURL in pPhotoURL:
+        #    Log("Professor photo URL: %s" % pURL)       
         eSummaryData = parser.data
         eTitleData = parser2.data
         Log("Updating episode data")
@@ -393,8 +400,10 @@ class TGCAgent(Agent.TV_Shows):
                                 if int(episode_num) <= lecture_len:
                                     Log("Episode Title: %s" % eTitleData[int(episode_num) - 1])
                                     Log("Episode summary %s" % eSummaryData[int(episode_num) - 1].strip())
-                                    episode.summary = str(eSummaryData[int(episode_num) - 1].strip())
-                                    episode.title = str(eTitleData[int(episode_num) - 1 ])
+                                    if episode.summary is None:
+                                        episode.summary = str(eSummaryData[int(episode_num) - 1].strip())
+                                    if episode.title is None:
+                                        episode.title = str(eTitleData[int(episode_num) - 1 ])
                                     Log("episode.summary: %s" % episode.summary)
                                     Log("episode.title: %s" % episode.title)
                                     Log("Getting Lecturer")
@@ -409,6 +418,8 @@ class TGCAgent(Agent.TV_Shows):
                                 meta_role.name = lecturer # role name
                                 meta_role.role = None # actor name
                                 meta_role.photo = None #url of actor photo
+                                #if pURL is not None:
+                                #    meta_role.photo = pURL #url of actor photo
                                 #Log("episode.directors: %s" % episode.directors)
                                 #Log("episode.writers: %s" % episode.writers)
                                 Log("Setting episode dates")    
