@@ -1,5 +1,5 @@
 * Use the Plex Agent API instead of urllib2/BeautifulSoup to expand compatibility when parsing HTML.
-* Fix episode director/writer object to contain pulled Lecturer/Professor data.
+✓ * Fix episode director/writer object to contain pulled Lecturer/Professor data.
 * Clean up some of the code.
 * Add more try/except error checking.
 * Use JSON to pull rating from TGC website (currently only dryscrape compatability).

@@ -22,6 +22,7 @@ except ImportError:
 
 
 TGC_COURSE_URL = 'http://www.thegreatcourses.com/courses/'
+TGC_SEARCH_URL = 'http://www.thegreatcourses.com/search/?q='
 USER_AGENT = 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:49.0) Gecko/20100101 Firefox/49.0'
 ONE_DAY = datetime.timedelta(days=1)
 TODAY = datetime.date.today()
@@ -264,7 +265,6 @@ class TGCAgent(Agent.TV_Shows):
     
     def getDESC(self, html):
         DESC = ''
-        COUNTER = 1
         
 #        request = urllib2.Request(courseURL)
 #        request.add_header('User-Agent', USER_AGENT)
@@ -275,23 +275,48 @@ class TGCAgent(Agent.TV_Shows):
         data = parser.data
         
         for desc in data:
-            if COUNTER < 20:
-                if not desc.isspace():
-                    DESC = ''.join([DESC,desc])
-                    COUNTER += 1
-            else:
+            if desc == "Hide Full Description":
                 break
+            elif desc == "Please Verify Account to Continue":
+                break
+            if desc.isspace():
+                DESC = "\n".join([DESC,desc])
+            else:
+                DESC = ''.join([DESC,desc])
         
         return DESC.strip()
     
+    def SearchCourse(self, mdatashow):
+        course = mdatashow
+        mdatashow = mdatashow.replace(':', '')
+        mdatashow = mdatashow.replace(',', '')
+        mdatashow = mdatashow.replace('?', '')
+        mdatashow = mdatashow.replace('"', '')
+        mdatashow = mdatashow.replace(' ', '+')
+        searchURL = ''.join([TGC_SEARCH_URL,mdatashow])
+        request = urllib2.Request(searchURL)
+        request.add_header('User-Agent', USER_AGENT)
+        opener = urllib2.build_opener()
+        html = opener.open(request).read()
+        
+        re_course = re.compile(course, re.IGNORECASE)
+
+        soup = BeautifulSoup(html)
+        sresult = soup.findAll(attrs={"title": re_course})
+        for link in sresult:
+            courseURL = link.get('href')
+
+        return courseURL 
+            
     def search(self, results, media, lang, manual=False):
         id2 = media.show
         id2 = id2.replace("'", ' ')
+        id2 = id2.replace('"', 'quot ')
         show = media.show.lower()
         show = show.replace(' ', '-')
         show = show.replace(':', '')
         show = show.replace(',', '')
-        show = show.replace('"', '')
+        show = show.replace('"', 'quot ')
         show = show.replace('?', '')
         show = show.replace("'", "-")
         Log("show value: %s" % show)
@@ -316,14 +341,15 @@ class TGCAgent(Agent.TV_Shows):
 
         Log("def update()")
         show = metadata.id
-        mdatashow = show.replace(' s ', "'s ")
+        mdatashow = show.replace(' quot ', ' "')
+        mdatashow = mdatashow.replace(' s ', "'s ")
         metadata.title = mdatashow
         Log("metadata.title: %s" % metadata.title)
         show = show.lower()
         show = show.replace(' ', '-')
         show = show.replace(':', '')
         show = show.replace(',', '')
-        show = show.replace('"', '')
+        show = show.replace('"', 'quot ')
         show = show.replace('?', '')
         show = show.replace("'", "-")
         courseURL = ''.join([TGC_COURSE_URL, show, '.html'])
@@ -342,7 +368,18 @@ class TGCAgent(Agent.TV_Shows):
         request = urllib2.Request(courseURL)
         request.add_header('User-Agent', USER_AGENT)
         opener = urllib2.build_opener()
-        html = opener.open(request).read()
+
+        try:
+            html = opener.open(request).read()
+        except urllib2.HTTPError:
+            Log("courseURL not found... Searching for related courses: %s" % mdatashow)
+            scourseURL = self.SearchCourse(mdatashow)
+            Log("Course found, URL: %s" % scourseURL)
+            request = urllib2.Request(scourseURL)
+            request.add_header('User-Agent', USER_AGENT)
+            opener = urllib2.build_opener()
+            html = opener.open(request).read()
+            
 
         data = self.getDESC(html)
         Log("Adding metadata summary")
@@ -368,12 +405,12 @@ class TGCAgent(Agent.TV_Shows):
             #lecturer = lecturer.replace('.', '') 
         else:
             lecturer = "me"
-        #soup = BeautifulSoup(html)
-        #pBlock = soup.find("div", { "class" : "prof-icon hide-below-768"})
-        #pPhotoblock = pBlock['style']
-        #pPhotoURL = re.findall(r"'(.*?)'", pPhotoblock)
-        #for pURL in pPhotoURL:
-        #    Log("Professor photo URL: %s" % pURL)       
+        soup2 = BeautifulSoup(html)
+        pBlock = soup2.find("div", { "class" : "prof-icon hide-below-768"})
+        pPhotoblock = pBlock['style']
+        pPhotoURL = re.findall(r"'(.*?)'", pPhotoblock)
+        for pURL in pPhotoURL:
+            Log("Professor photo URL: %s" % pURL)       
         eSummaryData = parser.data
         eTitleData = parser2.data
         Log("Updating episode data")
@@ -413,13 +450,15 @@ class TGCAgent(Agent.TV_Shows):
                                 #episode.writers.clear()
                                 #episode.directors.add(lecturer)
                                 #episode.writers.add(lecturer)
+                                #Thanks to ZeroQI for the directors edit
                                 episode.directors.clear()
-                                meta_role = episode.directors.new()
-                                meta_role.name = lecturer # role name
-                                meta_role.role = None # actor name
-                                meta_role.photo = None #url of actor photo
-                                #if pURL is not None:
-                                #    meta_role.photo = pURL #url of actor photo
+                                meta_director = episode.directors.new()
+                                meta_director.name = lecturer # role name
+                                meta_director.role = lecturer # actor name
+                                #meta_role.photo = None #url of actor photo
+                                if pURL is not None:
+                                    meta_director.photo = pURL #url of actor photo
+                                    Log("meta_director.photo: %s" % meta_director.photo)
                                 #Log("episode.directors: %s" % episode.directors)
                                 #Log("episode.writers: %s" % episode.writers)
                                 Log("Setting episode dates")    
