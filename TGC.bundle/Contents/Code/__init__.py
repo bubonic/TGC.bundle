@@ -288,35 +288,74 @@ class TGCAgent(Agent.TV_Shows):
     
     def SearchCourse(self, mdatashow):
         course = mdatashow
-        mdatashow = mdatashow.replace(':', '')
-        mdatashow = mdatashow.replace(',', '')
-        mdatashow = mdatashow.replace('?', '')
-        mdatashow = mdatashow.replace('"', '')
+        fixCourse = course
+
+        sResults = { }
+        sResultsSPAN = [ ]
+        spanLen = [ ]
+        sTitleResults = [ ]
+        
+        
+        mdatashow = mdatashow.replace(':', '%3A')
+        mdatashow = mdatashow.replace('?', '%3F')
+        mdatashow = mdatashow.replace(',', '%2C')
         mdatashow = mdatashow.replace(' ', '+')
+        
+        course = course.replace(':', '')
+        course = course.replace('"', '')
+        course = course.replace(',', '')
+        course = course.replace('?', '')
+        course = course.replace(' ', '.*')
+        
         searchURL = ''.join([TGC_SEARCH_URL,mdatashow])
         request = urllib2.Request(searchURL)
         request.add_header('User-Agent', USER_AGENT)
         opener = urllib2.build_opener()
         html = opener.open(request).read()
         
-        re_course = re.compile(course, re.IGNORECASE)
-
+        re_course = re.compile(course, re.DOTALL | re.IGNORECASE)
+    
         soup = BeautifulSoup(html)
-        sresult = soup.findAll(attrs={"title": re_course})
+        sresult = soup.findAll(attrs={"class": "item-inner"})
+        Log("Locating search results...")
+        
         for link in sresult:
-            courseURL = link.get('href')
+            title = link.a['title']
+            Log("Title: %s" % link.a['title'])
+            re_course_match = re_course.match(title)
+            if re_course_match is not None:
+                Log("Match found for: %s" % fixCourse)
+                Log("Title found is: %s" % title)
+                Log("Link is: %s" % link.a['href'])
+                sResults.update({title: link.a['href']})
+                sResultsSPAN.append(re_course_match.span())
+                sTitleResults.append(title)
+        
+        Log("Finding best match...")
+        for spanR in sResultsSPAN:
+            spanLen.append(spanR[1] - spanR[0])
+            Log("Span length for is: %s" % spanLen[-1])
+            
+        cindex = spanLen.index(max(spanLen))
+        #cindex = max(xrange(len(spanLen)), key=spanLen.__getitem__)
 
-        return courseURL 
+        Log("CourseTitle is: %s" % sTitleResults[cindex])
+        Log("CourseURL is: %s" % sResults[sTitleResults[cindex]])
+
+        Results = {'title': sTitleResults[cindex], 'href': sResults[sTitleResults[cindex]]}
+                
+        return Results
             
     def search(self, results, media, lang, manual=False):
         id2 = media.show
         id2 = id2.replace("'", ' ')
-        id2 = id2.replace('"', 'quot ')
+        id2 = id2.replace('"', ' quot ')
         show = media.show.lower()
         show = show.replace(' ', '-')
         show = show.replace(':', '')
         show = show.replace(',', '')
-        show = show.replace('"', 'quot ')
+        show = show.replace(' "', ' quot ')
+        show = show.replace('" ', ' quot ')
         show = show.replace('?', '')
         show = show.replace("'", "-")
         Log("show value: %s" % show)
@@ -341,18 +380,21 @@ class TGCAgent(Agent.TV_Shows):
 
         Log("def update()")
         show = metadata.id
-        mdatashow = show.replace(' quot ', ' "')
+        mdatashow = show.replace('quot', '"')
         mdatashow = mdatashow.replace(' s ', "'s ")
         metadata.title = mdatashow
         Log("metadata.title: %s" % metadata.title)
         show = show.lower()
-        show = show.replace(' ', '-')
         show = show.replace(':', '')
         show = show.replace(',', '')
-        show = show.replace('"', 'quot ')
+        show = show.replace('"', ' quot ')
+        #show = show.replace('" ', ' quot ')
         show = show.replace('?', '')
         show = show.replace("'", "-")
+        show = show.replace('  ', ' ')
+        show = show.replace(' ', '-')
         courseURL = ''.join([TGC_COURSE_URL, show, '.html'])
+        courseURL = courseURL.replace('-.html', '.html')
         Log("update() CourseURL: %s" % courseURL)
         Log("Calling dryscrape and visiting coursURL")
         #session = dryscrape.Session()
@@ -373,8 +415,10 @@ class TGCAgent(Agent.TV_Shows):
             html = opener.open(request).read()
         except urllib2.HTTPError:
             Log("courseURL not found... Searching for related courses: %s" % mdatashow)
-            scourseURL = self.SearchCourse(mdatashow)
-            Log("Course found, URL: %s" % scourseURL)
+            Results = self.SearchCourse(mdatashow)
+            Log("Course found, URL: %s" % Results['href'])
+            scourseURL = Results['href']
+            metadata.title = Results['title']
             request = urllib2.Request(scourseURL)
             request.add_header('User-Agent', USER_AGENT)
             opener = urllib2.build_opener()
