@@ -286,9 +286,10 @@ class TGCAgent(Agent.TV_Shows):
         
         return DESC.strip()
     
-    def SearchCourse(self, mdatashow):
+    def SearchCourse(self, mdatashow, cNum):
         course = mdatashow
         fixCourse = course
+        CN = 31337
 
         sResults = { }
         sResultsSPAN = [ ]
@@ -337,13 +338,32 @@ class TGCAgent(Agent.TV_Shows):
             Log("Span length for is: %s" % spanLen[-1])
             
         cindex = spanLen.index(max(spanLen))
-        #cindex = max(xrange(len(spanLen)), key=spanLen.__getitem__)
-
-        Log("CourseTitle is: %s" % sTitleResults[cindex])
-        Log("CourseURL is: %s" % sResults[sTitleResults[cindex]])
-
         Results = {'title': sTitleResults[cindex], 'href': sResults[sTitleResults[cindex]]}
-                
+        #cindex = max(xrange(len(spanLen)), key=spanLen.__getitem__)
+        while (CN != cNum):
+
+            Log("CourseTitle is: %s" % sTitleResults[cindex])
+            Log("CourseURL is: %s" % sResults[sTitleResults[cindex]])
+
+            resultsURL = sResults[sTitleResults[cindex]]
+            request = urllib2.Request(resultsURL)
+            request.add_header('User-Agent', USER_AGENT)
+            opener = urllib2.build_opener()
+            html = opener.open(request).read()
+            soup = BeautifulSoup(html)
+  
+            courseNum = soup.find("div", { "class" : "course-number" } )
+            CN = courseNum.getText().split(';',1)[-1]
+            Log("Course Number Search: %s" % cNum)
+            Log("Course Number Found: %s" % CN)
+
+            if cNum == CN:
+                Results = {'title': sTitleResults[cindex], 'href': sResults[sTitleResults[cindex]]}
+            else:
+                del spanLen[cindex]
+                cindex = spanLen.index(max(spanLen))
+
+                    
         return Results
             
     def search(self, results, media, lang, manual=False):
@@ -382,8 +402,21 @@ class TGCAgent(Agent.TV_Shows):
         show = metadata.id
         mdatashow = show.replace('quot', '"')
         mdatashow = mdatashow.replace(' s ', "'s ")
-        metadata.title = mdatashow
+        reCourse = re.search('TGC[0-9]{1,4}', mdatashow, re.IGNORECASE)
+        if reCourse is not None:
+            rg = re.compile("TGC", re.IGNORECASE)
+            cNum = rg.split(mdatashow)[-1]
+            #cNum = mdatashow.split('[',1)[-1]
+            #cNum = cNum.replace(']','')
+            #cNum = cNum.split('TGC',1)[-1]
+            Log("Course Number: %s"  % cNum)
+            metadata.title = rg.split(mdatashow)[0]
+        else:
+            metadata.title = mdatashow
+            cNum = 0
+        #metadata.title = mdatashow
         Log("metadata.title: %s" % metadata.title)
+        show = metadata.title
         show = show.lower()
         show = show.replace(':', '')
         show = show.replace(',', '')
@@ -414,8 +447,8 @@ class TGCAgent(Agent.TV_Shows):
         try:
             html = opener.open(request).read()
         except urllib2.HTTPError:
-            Log("courseURL not found... Searching for related courses: %s" % mdatashow)
-            Results = self.SearchCourse(mdatashow)
+            Log("courseURL not found... Searching for related courses: %s" % metadata.title)
+            Results = self.SearchCourse(metadata.title, cNum)
             Log("Course found, URL: %s" % Results['href'])
             scourseURL = Results['href']
             metadata.title = Results['title']
@@ -499,6 +532,13 @@ class TGCAgent(Agent.TV_Shows):
                                 meta_director = episode.directors.new()
                                 meta_director.name = lecturer # role name
                                 meta_director.role = lecturer # actor name
+                                metadata.roles.clear()
+                                meta_role = metadata.roles.new()
+                                meta_role.name = lecturer
+                                meta_role.role = lecturer
+                                if pURL is not None:
+                                    meta_role.photo = pURL
+                                    Log("meta_role.photo: %s" % meta_role.photo)
                                 #meta_role.photo = None #url of actor photo
                                 if pURL is not None:
                                     meta_director.photo = pURL #url of actor photo
