@@ -307,6 +307,10 @@ class TGCAgent(Agent.TV_Shows):
         course = course.replace(',', '')
         course = course.replace('?', '')
         course = course.replace(' ', '.*')
+        course = course.replace('The', '')
+        course = course.replace ('the', '')
+        course = course.replace ('of', '')
+
         
         searchURL = ''.join([TGC_SEARCH_URL,mdatashow])
         request = urllib2.Request(searchURL)
@@ -354,8 +358,15 @@ class TGCAgent(Agent.TV_Shows):
                 html = opener.open(request).read()
                 soup = BeautifulSoup(html)
   
+                #courseNum = soup.find("div", { "class" : "course-number" } )
+                #CN = courseNum.getText().split(';',1)[-1]
                 courseNum = soup.find("div", { "class" : "course-number" } )
-                CN = courseNum.getText().split(';',1)[-1]
+                if courseNum is not None:
+                    CN = courseNum.getText().split(';',1)[-1]
+                else:
+                    courseNum = soup.find("span", { "class" : "course-num" } )
+                    CN = courseNum.getText().split('No.', 1)[-1]
+                    CN = CN.split(';', 1)[-1].strip()
                 Log("Course Number Search: %s" % cNum)
                 Log("Course Number Found: %s" % CN)
 
