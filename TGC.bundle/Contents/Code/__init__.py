@@ -397,6 +397,8 @@ class TGCAgent(Agent.TV_Shows):
             
 
     def update(self, metadata, media, lang):
+        lecturers = []
+
 
         Log("def update()")
         show = metadata.id
@@ -482,12 +484,23 @@ class TGCAgent(Agent.TV_Shows):
             #lecturer = lecturer.replace('.', '') 
         else:
             lecturer = "me"
+            Log("More than one professor, getting all lecturers...")
+            soupPro = BeautifulSoup(html)
+            professorNames = soupPro.findAll("div", { "class" : "professor-name"})
+            for p in professorNames:
+                lecturers.append(p.getText())
+                Log("Professor: %s" % p.getText())
+                
         soup2 = BeautifulSoup(html)
+        Log("Finding professor photo...")
         pBlock = soup2.find("div", { "class" : "prof-icon hide-below-768"})
-        pPhotoblock = pBlock['style']
-        pPhotoURL = re.findall(r"'(.*?)'", pPhotoblock)
-        for pURL in pPhotoURL:
-            Log("Professor photo URL: %s" % pURL)       
+        if pBlock is not None:
+            pPhotoblock = pBlock['style']
+            pPhotoURL = re.findall(r"'(.*?)'", pPhotoblock)
+            for pURL in pPhotoURL:
+                Log("Professor photo URL: %s" % pURL)
+        else:
+            pURL = None
         eSummaryData = parser.data
         eTitleData = parser2.data
         Log("Updating episode data")
@@ -529,20 +542,28 @@ class TGCAgent(Agent.TV_Shows):
                                 #episode.writers.add(lecturer)
                                 #Thanks to ZeroQI for the directors edit
                                 episode.directors.clear()
-                                meta_director = episode.directors.new()
-                                meta_director.name = lecturer # role name
-                                meta_director.role = lecturer # actor name
                                 metadata.roles.clear()
                                 meta_role = metadata.roles.new()
-                                meta_role.name = lecturer
-                                meta_role.role = lecturer
-                                if pURL is not None:
-                                    meta_role.photo = pURL
-                                    Log("meta_role.photo: %s" % meta_role.photo)
+                                meta_director = episode.directors.new()
+                                if lecturer == "me": 
+                                    for l in lecturers:
+                                        meta_role = metadata.roles.new()
+                                        meta_director = episode.directors.new()
+                                        meta_director.name = l # role name
+                                        meta_director.role = l # actor name
+                                        meta_role.name = l
+                                        meta_role.role = l
+                                else:
+                                    meta_director.name = lecturer # role name
+                                    meta_director.role = lecturer # actor name
+                                    meta_role.name = lecturer
+                                    meta_role.role = lecturer
                                 #meta_role.photo = None #url of actor photo
                                 if pURL is not None:
                                     meta_director.photo = pURL #url of actor photo
                                     Log("meta_director.photo: %s" % meta_director.photo)
+                                    meta_role.photo = pURL
+                                    Log("meta_role.photo: %s" % meta_role.photo)
                                 #Log("episode.directors: %s" % episode.directors)
                                 #Log("episode.writers: %s" % episode.writers)
                                 Log("Setting episode dates")    
