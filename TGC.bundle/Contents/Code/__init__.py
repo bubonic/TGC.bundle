@@ -340,28 +340,29 @@ class TGCAgent(Agent.TV_Shows):
         cindex = spanLen.index(max(spanLen))
         Results = {'title': sTitleResults[cindex], 'href': sResults[sTitleResults[cindex]]}
         #cindex = max(xrange(len(spanLen)), key=spanLen.__getitem__)
-        while (CN != cNum):
+        if cNum != 0:
+            while (CN != cNum):
 
-            Log("CourseTitle is: %s" % sTitleResults[cindex])
-            Log("CourseURL is: %s" % sResults[sTitleResults[cindex]])
+                Log("CourseTitle is: %s" % sTitleResults[cindex])
+                Log("CourseURL is: %s" % sResults[sTitleResults[cindex]])
 
-            resultsURL = sResults[sTitleResults[cindex]]
-            request = urllib2.Request(resultsURL)
-            request.add_header('User-Agent', USER_AGENT)
-            opener = urllib2.build_opener()
-            html = opener.open(request).read()
-            soup = BeautifulSoup(html)
+                resultsURL = sResults[sTitleResults[cindex]]
+                request = urllib2.Request(resultsURL)
+                request.add_header('User-Agent', USER_AGENT)
+                opener = urllib2.build_opener()
+                html = opener.open(request).read()
+                soup = BeautifulSoup(html)
   
-            courseNum = soup.find("div", { "class" : "course-number" } )
-            CN = courseNum.getText().split(';',1)[-1]
-            Log("Course Number Search: %s" % cNum)
-            Log("Course Number Found: %s" % CN)
+                courseNum = soup.find("div", { "class" : "course-number" } )
+                CN = courseNum.getText().split(';',1)[-1]
+                Log("Course Number Search: %s" % cNum)
+                Log("Course Number Found: %s" % CN)
 
-            if cNum == CN:
-                Results = {'title': sTitleResults[cindex], 'href': sResults[sTitleResults[cindex]]}
-            else:
-                del spanLen[cindex]
-                cindex = spanLen.index(max(spanLen))
+                if cNum == CN:
+                    Results = {'title': sTitleResults[cindex], 'href': sResults[sTitleResults[cindex]]}
+                else:
+                    del spanLen[cindex]
+                    cindex = spanLen.index(max(spanLen))
 
                     
         return Results
