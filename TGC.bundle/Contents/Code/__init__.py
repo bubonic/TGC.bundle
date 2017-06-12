@@ -340,6 +340,7 @@ class TGCAgent(Agent.TV_Shows):
         cindex = spanLen.index(max(spanLen))
         Results = {'title': sTitleResults[cindex], 'href': sResults[sTitleResults[cindex]]}
         #cindex = max(xrange(len(spanLen)), key=spanLen.__getitem__)
+        #checking if there is a course number
         if cNum != 0:
             while (CN != cNum):
 
