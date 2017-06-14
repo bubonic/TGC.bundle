@@ -411,7 +411,9 @@ class TGCAgent(Agent.TV_Shows):
 
     def update(self, metadata, media, lang):
         lecturers = []
-
+        pNames = []
+        pNamesURL = []
+        lRoles = []
 
         Log("def update()")
         show = metadata.id
@@ -503,7 +505,21 @@ class TGCAgent(Agent.TV_Shows):
             for p in professorNames:
                 lecturers.append(p.getText())
                 Log("Professor: %s" % p.getText())
-                
+            firstBlock = soupPro.find("img", { "class" : "active" })
+            pNames.append(firstBlock['alt'])
+            pNamesURL.append(firstBlock['src'])
+            lRoles.append(str(lecturers[0].split(firstBlock['alt'],1)[-1]))
+            lRoles[0] = lRoles[0].split(',',1)[-1].strip()
+            remBlocks = soupPro.findAll("img", { "class" : ""})
+            COUNT=1
+            for remaining in remBlocks:
+                pNames.append(remaining['alt'])
+                pNamesURL.append(remaining['src'])
+                lRoles.append(str(lecturers[COUNT].split(remaining['alt'],1)[-1]))
+                lRoles[COUNT] = lRoles[COUNT].split(',',1)[-1].strip()
+                Log("Professor: %s  - Role: %s" % (pNames[COUNT], lRoles[COUNT]))
+                COUNT = COUNT + 1
+         
         soup2 = BeautifulSoup(html)
         Log("Finding professor photo...")
         pBlock = soup2.find("div", { "class" : "prof-icon hide-below-768"})
@@ -514,6 +530,11 @@ class TGCAgent(Agent.TV_Shows):
                 Log("Professor photo URL: %s" % pURL)
         else:
             pURL = None
+            
+        pNameBlock = soup2.find("img", { "class" : "active" })
+        if pNameBlock is not None:
+            pName = pNameBlock['alt']
+        lrole = lecturer.split(pName,1)[0]
         eSummaryData = parser.data
         eTitleData = parser2.data
         Log("Updating episode data")
@@ -558,19 +579,23 @@ class TGCAgent(Agent.TV_Shows):
                                 metadata.roles.clear()
                                 meta_role = metadata.roles.new()
                                 meta_director = episode.directors.new()
+                                COUNT=0
                                 if lecturer == "me": 
-                                    for l in lecturers:
+                                    for pname in pNames:
                                         meta_role = metadata.roles.new()
                                         meta_director = episode.directors.new()
-                                        meta_director.name = l # role name
-                                        meta_director.role = l # actor name
-                                        meta_role.name = l
-                                        meta_role.role = l
+                                        meta_director.name = pname 
+                                        meta_director.role = pname
+                                        meta_role.name = pname
+                                        meta_role.role = pname
+                                        Log("meta_role.role: %s" % meta_role.role)
+                                        meta_role.photo = pNamesURL[COUNT]
+                                        COUNT = COUNT + 1
                                 else:
-                                    meta_director.name = lecturer # role name
-                                    meta_director.role = lecturer # actor name
-                                    meta_role.name = lecturer
-                                    meta_role.role = lecturer
+                                    meta_director.name = pName # role name
+                                    meta_director.role = lrole # actor name
+                                    meta_role.name = pName
+                                    meta_role.role = lrole
                                 #meta_role.photo = None #url of actor photo
                                 if pURL is not None:
                                     meta_director.photo = pURL #url of actor photo
