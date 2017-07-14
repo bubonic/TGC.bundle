@@ -2,6 +2,7 @@ from HTMLParser import HTMLParser, HTMLParseError
 from htmlentitydefs import name2codepoint
 from BeautifulSoup import BeautifulSoup 
 import datetime
+import ssl
 import sys
 import os
 import re
@@ -23,12 +24,16 @@ except ImportError:
 
 TGC_COURSE_URL = 'http://www.thegreatcourses.com/courses/'
 TGC_SEARCH_URL = 'http://www.thegreatcourses.com/search/?q='
+TGC_PLUS_COURSE_URL = 'https://www.thegreatcoursesplus.com/'
+TGC_PLUS_SEARCH_URL = 'https://www.thegreatcoursesplus.com/search/?q='
+TGC_PLUS_URL2 = 'https://www.thegreatcoursesplus.com/'
+TGC_PLUS_URL1 = 'https://www.thegreatcoursesplus.com/show/'
 USER_AGENT = 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:49.0) Gecko/20100101 Firefox/49.0'
 ONE_DAY = datetime.timedelta(days=1)
 TODAY = datetime.date.today()
 #product_category = {'901' : "Economics & Finance", '902' : 'High School', '904' : 'Fine-Arts', '905' : 'Literature & Language', '907' : 'Philosophy, Intellectual History','909' : 'Religion', '910' : 'Mathematics', '918' : 'History', '926': 'Science', '927': 'Better Living'   }
 
-# For Sure yo
+# For Sure yo, coded by bubonic
 
 def Start():
 
@@ -288,6 +293,183 @@ class TGCAgent(Agent.TV_Shows):
         
         return DESC.strip()
     
+    def coursePlusURLs(self, course):
+        COURSE = ''
+        COURSEa = 'a'
+        COURSEthe = 'the'
+        coursePlusURLs = []
+        URLs = []
+        separator = ['_','-']
+        
+        course1 = course.lower()
+        course1 = course1.replace(':', '')
+        course1 = course1.replace('"', '')
+        course1 = course1.replace(',', '')
+        course1 = course1.replace('?', '')
+        course1 = course1.replace(' ', '_')
+        course1 = course1.replace("'", '')
+        course1 = course1[:-1]
+
+        course2 = course.lower()
+        course2 = course2.replace(':', '')
+        course2 = course2.replace('"', '')
+        course2 = course2.replace(',', '')
+        course2 = course2.replace('?', '')
+        course2 = course2.replace(' ', '-')
+        course2 = course2.replace("'", '')
+        course2 = course2[:-1]
+        
+        course3 = course.lower()
+        course3 = course3.split(':')[0]
+        course3 = course3.replace(':', '')
+        course3 = course3.replace('"', '')
+        course3 = course3.replace(',', '')
+        course3 = course3.replace('?', '')
+        course3 = course3.replace(' ', '_')
+        course3 = course3.replace("'", '')
+
+        course4 = course.lower()
+        course4 = course4.split(':')[0]
+        course4 = course4.replace(':', '')
+        course4 = course4.replace('"', '')
+        course4 = course4.replace(',', '')
+        course4 = course4.replace('?', '')
+        course4 = course4.replace(' ', '-')
+        course4 = course4.replace("'", '')
+        
+        coursetemp = course.lower()
+        course5 = 'the_' + coursetemp[0:]
+        course5 = course5.replace(':', '')
+        course5 = course5.replace('"', '')
+        course5 = course5.replace(',', '')
+        course5 = course5.replace('?', '')
+        course5 = course5.replace(' ', '_')
+        course5 = course5.replace("'", '')
+        course1 = course1[:-1]
+
+        coursetemp = course.lower()
+        course6 = 'the-' + coursetemp[0:]
+        course6 = course6.replace(':', '')
+        course6 = course6.replace('"', '')
+        course6 = course6.replace(',', '')
+        course6 = course6.replace('?', '')
+        course6 = course6.replace(' ', '-')
+        course6 = course6.replace("'", '')
+        course1 = course1[:-1]
+
+
+        coursetemp = course.lower()
+        course7 = 'a_' + coursetemp[0:]
+        course7 = course7.replace(':', '')
+        course7 = course7.replace('"', '')
+        course7 = course7.replace(',', '')
+        course7 = course7.replace('?', '')
+        course7 = course7.replace(' ', '_')
+        course7 = course7.replace("'", '')
+        course1 = course1[:-1]
+
+        coursetemp = course.lower()
+        course8 = 'a-' + coursetemp[0:]
+        course8 = course8.replace(':', '')
+        course8 = course8.replace('"', '')
+        course8 = course8.replace(',', '')
+        course8 = course8.replace('?', '')
+        course8 = course8.replace(' ', '-')
+        course8 = course8.replace("'", '')
+        course1 = course1[:-1]
+
+
+        coursePlusURLs.append(''.join([TGC_PLUS_URL1, course1]))
+        coursePlusURLs.append(''.join([TGC_PLUS_URL2, course2]))
+        coursePlusURLs.append(''.join([TGC_PLUS_URL1, course3]))
+        coursePlusURLs.append(''.join([TGC_PLUS_URL2, course4]))
+        coursePlusURLs.append(''.join([TGC_PLUS_URL1, course5]))
+        coursePlusURLs.append(''.join([TGC_PLUS_URL2, course6]))
+        coursePlusURLs.append(''.join([TGC_PLUS_URL1, course7]))
+        coursePlusURLs.append(''.join([TGC_PLUS_URL2, course8]))
+        
+        courseSplit = course2.split('-')
+        
+        i=1
+        for sep in separator:
+            for splt in courseSplit:
+                if i == 1:
+                    COURSE = COURSE + splt
+                    COURSEa = COURSEa + sep + splt
+                    COURSEthe = COURSEthe + sep + splt
+                elif i <=len(courseSplit):
+                    COURSE = COURSE + sep + splt
+                    COURSEa = COURSEa + sep + splt
+                    COURSEthe = COURSEthe + sep + splt    
+                    if sep == separator[0]:
+                        coursePlusURLs.append(''.join([TGC_PLUS_URL1, COURSE]))
+                        coursePlusURLs.append(''.join([TGC_PLUS_URL1, COURSEa]))
+                        coursePlusURLs.append(''.join([TGC_PLUS_URL1, COURSEthe]))
+                    else:
+                        coursePlusURLs.append(''.join([TGC_PLUS_URL2, COURSE]))
+                        coursePlusURLs.append(''.join([TGC_PLUS_URL2, COURSEa]))
+                        coursePlusURLs.append(''.join([TGC_PLUS_URL2, COURSEthe]))
+                i = i + 1
+            COURSE = ''
+            COURSEa = 'a'
+            COURSEthe = 'the' 
+            i=1
+        
+        
+        
+        '''
+        Log("CourseURL1: %s" % coursePlusURL1)
+        Log("CourseURL2: %s" % coursePlusURL2)
+        Log("CourseURL3: %s" % coursePlusURL3)
+        Log("CourseURL4: %s" % coursePlusURL4)
+        Log("CourseURL5: %s" % coursePlusURL5)
+        Log("CourseURL6: %s" % coursePlusURL6)
+        Log("CourseURL7: %s" % coursePlusURL7)
+        Log("CourseURL8: %s" % coursePlusURL8)
+        '''
+        
+        #URLs.extend((coursePlusURL1, coursePlusURL2, coursePlusURL3, coursePlusURL4, coursePlusURL5, coursePlusURL6, coursePlusURL7, coursePlusURL8))
+        return coursePlusURLs
+        
+    def getLectureThumbs(self, URLs):
+        lectureThumbs = []
+        i=1
+    
+        for url in URLs:
+            Log("Finding lecture thumbs URL: %s" % url)
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            requestPlus = urllib2.Request(url)
+            requestPlus.add_header('User-Agent', USER_AGENT)
+            try:
+                f = urllib2.urlopen(requestPlus, context=ctx)
+                htmlPlus = f.read()
+            except urllib2.HTTPError:        
+                Log("urllib2 HTTPError")
+                pass
+
+            soup = BeautifulSoup(htmlPlus)
+            lectureThumbBlock = soup.findAll('div', { 'class' : 'list-tray-item-image-container'} )
+    
+            for lThumb in lectureThumbBlock:
+                link = lThumb.img
+                try: 
+                    thumbImg = link['src']
+                except KeyError:
+                        thumbImg = link['data-src']
+                Log("Lecture %s thumbURL: %s" % (i, thumbImg))
+                i += 1
+                lectureThumbs.append(thumbImg)
+            
+            if lectureThumbs:
+                Log("Found Lecture Thumbs! Quitting getLectureThumbs()")
+                break
+            else:
+                Log("No Lecture thumbs found at url: %s" % url)
+                
+        return lectureThumbs
+
     def getLecturer(self, html, meta_people_obj):
         lecturers = []
         pNames = []
@@ -370,6 +552,7 @@ class TGCAgent(Agent.TV_Shows):
             lNames.update({"Role": lRoles})
             lNames.update({"Photo": pNamesURL})
             return lNames    
+        
     def SearchCourse(self, mdatashow, cNum):
         course = mdatashow
         fixCourse = course
@@ -464,7 +647,27 @@ class TGCAgent(Agent.TV_Shows):
 
                     
         return Results
-            
+    '''
+    def getLectureThumbs(self,htmlPlus):
+        lectureThumbs = []
+        i=0
+        
+        soup = BeautifulSoup(htmlPlus)
+        lectureThumbBlock = soup.findAll('div', { 'class' : 'list-tray-item-image-container'} )
+        Log("LectureTHumbBlock: %s" % lectureThumbBlock)
+        for lThumb in lectureThumbBlock:
+            link = lThumb.img
+            try: 
+                thumbImg = link['src']
+            except KeyError:
+                thumbImg = link['data-src']
+    
+            Log("Lecture %s thumbURL: %s" % (i, thumbImg))
+            i += 1
+            lectureThumbs.append(thumbImg)
+        return lectureThumbs
+    '''
+    
     def search(self, results, media, lang, manual=False):
         id2 = media.show
         id2 = id2.replace("'", ' ')
@@ -531,20 +734,16 @@ class TGCAgent(Agent.TV_Shows):
         show = show.replace(' ', '-')
         courseURL = ''.join([TGC_COURSE_URL, show, '.html'])
         courseURL = courseURL.replace('-.html', '.html')
+        #coursePlusURL = ''.join([TGC_PLUS_COURSE_URL, show])
+        #coursePlusURL = coursePlusURL[:-1]
         Log("update() CourseURL: %s" % courseURL)
-        
-        
-        #session = dryscrape.Session()
-        #session.set_header('User-Agent', USER_AGENT)
-        #session.visit(courseURL)
-        #html = session.body()
-        
-        #Log("Getting Rating")
+        #Log("update() CoursePlusURL: %s" % coursePlusURL)
         
         Log("calling urllib2 and visiting coursURL")
         request = urllib2.Request(courseURL)
         request.add_header('User-Agent', USER_AGENT)
         opener = urllib2.build_opener()
+        
 
         try:
             html = opener.open(request).read()
@@ -563,9 +762,7 @@ class TGCAgent(Agent.TV_Shows):
         data = self.getDESC(html)
         Log("Adding metadata summary")
         metadata.summary = data
-        #Log("Retrieving episode/season number")
-        #season_num = media.season
-        #episode_num = media.episode
+        
         Log("Calling MyLDESCParser()")
         parser = self.MyLDESCParser()
         Log("Calling MyLTITLEarser()")
@@ -596,6 +793,29 @@ class TGCAgent(Agent.TV_Shows):
         
         eSummaryData = parser.data
         eTitleData = parser2.data
+        
+        Log("Visiting TGC+ companion website if it exists...")
+        coursePlusURLs = self.coursePlusURLs(metadata.title)
+        lThumbs = self.getLectureThumbs(coursePlusURLs)
+
+        '''
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        requestPlus = urllib2.Request(coursePlusURL)
+        requestPlus.add_header('User-Agent', USER_AGENT)
+        #openerPlus = urllib2.build_opener()
+        #urllib2.install_opener(openerPlus)       
+        try:
+            f = urllib2.urlopen(requestPlus, context=ctx)
+            htmlPlus = f.read()
+            lThumbs = self.getLectureThumbs(htmlPlus)
+        except urllib2.HTTPError:
+            lThumbs = None
+            Log("The Great Courses PLUS course website is not found... Skipping.")
+            pass
+        '''
+        
         Log("Updating episode data")
         @parallelize
         def UpdateEpisodes(html=html, eSummaryData=eSummaryData, eTitleData=eTitleData, lecturer=lecturer):
@@ -628,6 +848,18 @@ class TGCAgent(Agent.TV_Shows):
                                         episode.rating = float(rating)
                                     Log("episode.summary: %s" % episode.summary)
                                     Log("episode.title: %s" % episode.title)
+                                    Log("Getting lecture thumb image")
+                                    if not lThumbs:
+                                        Log("No Episode thumbs avaialbe")
+                                    else:
+                                        Log("Episode thumbs are avaialbe!")
+                                        if lThumbs[int(episode_num) - 1] not in episode.thumbs:
+                                            try:
+                                                episode.thumbs[lThumbs[int(episode_num) - 1 ]] = Proxy.Preview(HTTP.Request(lThumbs[int(episode_num) - 1]).content, sort_order=1)
+                                            except: 
+                                                Log("Download of thumb image failed! - %s" % lThumbs[int(episode_num)])
+                                                pass
+                                        
                                     Log("Getting Lecturer")
 
                                 Log("Lecturer: %s" % lecturer)

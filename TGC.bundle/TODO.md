@@ -1,7 +1,7 @@
-* Use the Plex Agent API instead of urllib2/BeautifulSoup to expand compatibility when parsing HTML.
-✓ * Fix episode director/writer object to contain pulled Lecturer/Professor data.
+* Make course description identical to TGC course site. (lots of html parsing! - half way done)
+* Add genres.
 * Clean up some of the code.
 * Add more try/except error checking.
-* Use JSON to pull rating from TGC website (currently only dryscrape compatability).
 * Add checks for existing metadata so it's not updating the metadata every time.
 * Make to code less demanding on the PLEX server.
+* Add compatibility for audio lectures.

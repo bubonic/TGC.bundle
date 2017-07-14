@@ -39,6 +39,7 @@ or
 
 The Black Death: The World's Most Devastating Plague (TGC8241) S01E01.mp4
 
+The FULL COURSE NAME can be found as the heading of the course webpage. 
 
 Create a TV Shows Library in PLEX and set the primary agent to TGC.  i.e.,
 
