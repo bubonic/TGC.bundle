@@ -423,18 +423,6 @@ class TGCAgent(Agent.TV_Shows):
             i=1
         
         
-        
-        '''
-        Log("CourseURL1: %s" % coursePlusURL1)
-        Log("CourseURL2: %s" % coursePlusURL2)
-        Log("CourseURL3: %s" % coursePlusURL3)
-        Log("CourseURL4: %s" % coursePlusURL4)
-        Log("CourseURL5: %s" % coursePlusURL5)
-        Log("CourseURL6: %s" % coursePlusURL6)
-        Log("CourseURL7: %s" % coursePlusURL7)
-        Log("CourseURL8: %s" % coursePlusURL8)
-        '''
-        
         #URLs.extend((coursePlusURL1, coursePlusURL2, coursePlusURL3, coursePlusURL4, coursePlusURL5, coursePlusURL6, coursePlusURL7, coursePlusURL8))
         return coursePlusURLs
         
