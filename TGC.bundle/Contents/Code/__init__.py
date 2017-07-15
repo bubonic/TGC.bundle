@@ -1,3 +1,4 @@
+# coding: utf-8
 from HTMLParser import HTMLParser, HTMLParseError
 from htmlentitydefs import name2codepoint
 from BeautifulSoup import BeautifulSoup 
@@ -308,7 +309,8 @@ class TGCAgent(Agent.TV_Shows):
         course1 = course1.replace('?', '')
         course1 = course1.replace(' ', '_')
         course1 = course1.replace("'", '')
-        course1 = course1[:-1]
+        if course1.endswith('_'): 
+            course1 = course1[:-1]
 
         course2 = course.lower()
         course2 = course2.replace(':', '')
@@ -317,7 +319,8 @@ class TGCAgent(Agent.TV_Shows):
         course2 = course2.replace('?', '')
         course2 = course2.replace(' ', '-')
         course2 = course2.replace("'", '')
-        course2 = course2[:-1]
+        if course2.endswith('-'): 
+            course2 = course2[:-1]
         
         course3 = course.lower()
         course3 = course3.split(':')[0]
@@ -345,7 +348,8 @@ class TGCAgent(Agent.TV_Shows):
         course5 = course5.replace('?', '')
         course5 = course5.replace(' ', '_')
         course5 = course5.replace("'", '')
-        course1 = course1[:-1]
+        if course5.endswith('_'): 
+            course5 = course5[:-1]
 
         coursetemp = course.lower()
         course6 = 'the-' + coursetemp[0:]
@@ -355,7 +359,8 @@ class TGCAgent(Agent.TV_Shows):
         course6 = course6.replace('?', '')
         course6 = course6.replace(' ', '-')
         course6 = course6.replace("'", '')
-        course1 = course1[:-1]
+        if course6.endswith('-'): 
+            course6 = course6[:-1]
 
 
         coursetemp = course.lower()
@@ -366,7 +371,8 @@ class TGCAgent(Agent.TV_Shows):
         course7 = course7.replace('?', '')
         course7 = course7.replace(' ', '_')
         course7 = course7.replace("'", '')
-        course1 = course1[:-1]
+        if course7.endswith('_'): 
+            course7 = course7[:-1]
 
         coursetemp = course.lower()
         course8 = 'a-' + coursetemp[0:]
@@ -376,7 +382,8 @@ class TGCAgent(Agent.TV_Shows):
         course8 = course8.replace('?', '')
         course8 = course8.replace(' ', '-')
         course8 = course8.replace("'", '')
-        course1 = course1[:-1]
+        if course8.endswith('-'): 
+            course8 = course8[:-1]
 
 
         coursePlusURLs.append(''.join([TGC_PLUS_URL1, course1]))
@@ -647,26 +654,6 @@ class TGCAgent(Agent.TV_Shows):
 
                     
         return Results
-    '''
-    def getLectureThumbs(self,htmlPlus):
-        lectureThumbs = []
-        i=0
-        
-        soup = BeautifulSoup(htmlPlus)
-        lectureThumbBlock = soup.findAll('div', { 'class' : 'list-tray-item-image-container'} )
-        Log("LectureTHumbBlock: %s" % lectureThumbBlock)
-        for lThumb in lectureThumbBlock:
-            link = lThumb.img
-            try: 
-                thumbImg = link['src']
-            except KeyError:
-                thumbImg = link['data-src']
-    
-            Log("Lecture %s thumbURL: %s" % (i, thumbImg))
-            i += 1
-            lectureThumbs.append(thumbImg)
-        return lectureThumbs
-    '''
     
     def search(self, results, media, lang, manual=False):
         id2 = media.show
@@ -798,24 +785,6 @@ class TGCAgent(Agent.TV_Shows):
         coursePlusURLs = self.coursePlusURLs(metadata.title)
         lThumbs = self.getLectureThumbs(coursePlusURLs)
 
-        '''
-        ctx = ssl.create_default_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
-        requestPlus = urllib2.Request(coursePlusURL)
-        requestPlus.add_header('User-Agent', USER_AGENT)
-        #openerPlus = urllib2.build_opener()
-        #urllib2.install_opener(openerPlus)       
-        try:
-            f = urllib2.urlopen(requestPlus, context=ctx)
-            htmlPlus = f.read()
-            lThumbs = self.getLectureThumbs(htmlPlus)
-        except urllib2.HTTPError:
-            lThumbs = None
-            Log("The Great Courses PLUS course website is not found... Skipping.")
-            pass
-        '''
-        
         Log("Updating episode data")
         @parallelize
         def UpdateEpisodes(html=html, eSummaryData=eSummaryData, eTitleData=eTitleData, lecturer=lecturer):
