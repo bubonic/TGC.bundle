@@ -107,7 +107,7 @@ class TGCAgent(Agent.TV_Shows):
 
         def handle_data(self, data):
             if self.recording:
-                if data and data != 'x' and data != ' ':
+                if data and data != 'x':
                     if self.switch == 1:
                         last = self.data.pop()
                         self.newdata = ' '. join([last, data])
@@ -134,7 +134,7 @@ class TGCAgent(Agent.TV_Shows):
             self.c = text
             if self.data and self.recording:
                 last = self.data.pop()
-                self.newdata = ' '.join([last,self.c])
+                self.newdata = ''.join([last,self.c])
                 self.data.append(self.newdata)
                 #print "Newdata:     ", self.newdata
                 self.switch = 1
@@ -150,7 +150,7 @@ class TGCAgent(Agent.TV_Shows):
 
             if self.data and self.recording:
                 last = self.data.pop()
-                self.newdata2 = ' '.join([last,self.c2])
+                self.newdata2 = ''.join([last,self.c2])
                 self.data.append(self.newdata2)
                 self.switch = 1
 
@@ -191,7 +191,7 @@ class TGCAgent(Agent.TV_Shows):
                 if data and data != 'x' and data != ' ':
                     if self.switch == 1:
                         last = self.data.pop()
-                        self.newdata = ' '. join([last, data])
+                        self.newdata = ''. join([last, data])
                         self.data.append(self.newdata)
                         self.switch = 0
                     else:
@@ -233,7 +233,7 @@ class TGCAgent(Agent.TV_Shows):
                     Log("unknown character")    
             if self.data and self.recording:
                 last = self.data.pop()
-                self.newdata2 = ' '.join([last,self.c2])
+                self.newdata2 = ''.join([last,self.c2])
                 self.data.append(self.newdata2)
                 self.switch = 1
 
@@ -797,10 +797,8 @@ class TGCAgent(Agent.TV_Shows):
                                 if int(episode_num) <= lecture_len:
                                     Log("Episode Title: %s" % eTitleData[int(episode_num) - 1])
                                     Log("Episode summary %s" % eSummaryData[int(episode_num) - 1].strip())
-                                    if episode.summary is None:
-                                        episode.summary = str(eSummaryData[int(episode_num) - 1].strip())
-                                    if episode.title is None:
-                                        episode.title = str(eTitleData[int(episode_num) - 1 ])
+                                    episode.title = str(eTitleData[int(episode_num) - 1 ])
+                                    episode.summary = str(eSummaryData[int(episode_num) - 1].strip())
                                     if episode.rating is None:
                                         episode.rating = float(rating)
                                     Log("episode.summary: %s" % episode.summary)
