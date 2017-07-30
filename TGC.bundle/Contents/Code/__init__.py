@@ -27,6 +27,7 @@ TGC_COURSE_URL = 'http://www.thegreatcourses.com/courses/'
 TGC_SEARCH_URL = 'http://www.thegreatcourses.com/search/?q='
 TGC_PLUS_COURSE_URL = 'https://www.thegreatcoursesplus.com/'
 TGC_PLUS_SEARCH_URL = 'https://www.thegreatcoursesplus.com/search/?q='
+TGC_PLUS_ALL_URL = 'https://www.thegreatcoursesplus.com/allcourses'
 TGC_PLUS_URL2 = 'https://www.thegreatcoursesplus.com/'
 TGC_PLUS_URL1 = 'https://www.thegreatcoursesplus.com/show/'
 USER_AGENT = 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:49.0) Gecko/20100101 Firefox/49.0'
@@ -274,10 +275,6 @@ class TGCAgent(Agent.TV_Shows):
     def getDESC(self, html):
         DESC = ''
         
-#        request = urllib2.Request(courseURL)
-#        request.add_header('User-Agent', USER_AGENT)
-#        opener = urllib2.build_opener()
-#        html = opener.open(request).read()
         parser = self.MyDESCParser()
         parser.feed(html)
         data = parser.data
@@ -294,174 +291,125 @@ class TGCAgent(Agent.TV_Shows):
         
         return DESC.strip()
     
-    def coursePlusURLs(self, course):
-        COURSE = ''
-        COURSEa = 'a'
-        COURSEthe = 'the'
-        coursePlusURLs = []
-        URLs = []
-        separator = ['_','-']
+    def searchPlusURL(self, course):
+        fixCourse = course
+        sResultsSPAN = [ ]
+        sResults = [ ]
+        spanLen = [ ]
+        plusURL = ''
         
-        course1 = course.lower()
-        course1 = course1.replace(':', '')
-        course1 = course1.replace('"', '')
-        course1 = course1.replace(',', '')
-        course1 = course1.replace('?', '')
-        course1 = course1.replace(' ', '_')
-        course1 = course1.replace("'", '')
-        if course1.endswith('_'): 
-            course1 = course1[:-1]
-
-        course2 = course.lower()
-        course2 = course2.replace(':', '')
-        course2 = course2.replace('"', '')
-        course2 = course2.replace(',', '')
-        course2 = course2.replace('?', '')
-        course2 = course2.replace(' ', '-')
-        course2 = course2.replace("'", '')
-        if course2.endswith('-'): 
-            course2 = course2[:-1]
+        courses = { 'CTITLE': [], 'CLINK': [] }
         
-        course3 = course.lower()
-        course3 = course3.split(':')[0]
-        course3 = course3.replace(':', '')
-        course3 = course3.replace('"', '')
-        course3 = course3.replace(',', '')
-        course3 = course3.replace('?', '')
-        course3 = course3.replace(' ', '_')
-        course3 = course3.replace("'", '')
-
-        course4 = course.lower()
-        course4 = course4.split(':')[0]
-        course4 = course4.replace(':', '')
-        course4 = course4.replace('"', '')
-        course4 = course4.replace(',', '')
-        course4 = course4.replace('?', '')
-        course4 = course4.replace(' ', '-')
-        course4 = course4.replace("'", '')
+        linkre = re.compile("COURSE_LINK.*")
+        ctitlere = re.compile("COURSE_TITLE.*")
         
-        coursetemp = course.lower()
-        course5 = 'the_' + coursetemp[0:]
-        course5 = course5.replace(':', '')
-        course5 = course5.replace('"', '')
-        course5 = course5.replace(',', '')
-        course5 = course5.replace('?', '')
-        course5 = course5.replace(' ', '_')
-        course5 = course5.replace("'", '')
-        if course5.endswith('_'): 
-            course5 = course5[:-1]
+        course = course.replace(':', '')
+        course = course.replace('"', '')
+        course = course.replace(',', '')
+        course = course.replace('?', '')
+        course = course.replace(' ', '.*')
+        course = course.replace('&', '.')
+        course = course.replace('The', '.*')
+        course = course.replace('the', '.*')
+        course = course.replace('of', '.*')
 
-        coursetemp = course.lower()
-        course6 = 'the-' + coursetemp[0:]
-        course6 = course6.replace(':', '')
-        course6 = course6.replace('"', '')
-        course6 = course6.replace(',', '')
-        course6 = course6.replace('?', '')
-        course6 = course6.replace(' ', '-')
-        course6 = course6.replace("'", '')
-        if course6.endswith('-'): 
-            course6 = course6[:-1]
-
-
-        coursetemp = course.lower()
-        course7 = 'a_' + coursetemp[0:]
-        course7 = course7.replace(':', '')
-        course7 = course7.replace('"', '')
-        course7 = course7.replace(',', '')
-        course7 = course7.replace('?', '')
-        course7 = course7.replace(' ', '_')
-        course7 = course7.replace("'", '')
-        if course7.endswith('_'): 
-            course7 = course7[:-1]
-
-        coursetemp = course.lower()
-        course8 = 'a-' + coursetemp[0:]
-        course8 = course8.replace(':', '')
-        course8 = course8.replace('"', '')
-        course8 = course8.replace(',', '')
-        course8 = course8.replace('?', '')
-        course8 = course8.replace(' ', '-')
-        course8 = course8.replace("'", '')
-        if course8.endswith('-'): 
-            course8 = course8[:-1]
-
-
-        coursePlusURLs.append(''.join([TGC_PLUS_URL1, course1]))
-        coursePlusURLs.append(''.join([TGC_PLUS_URL2, course2]))
-        coursePlusURLs.append(''.join([TGC_PLUS_URL1, course3]))
-        coursePlusURLs.append(''.join([TGC_PLUS_URL2, course4]))
-        coursePlusURLs.append(''.join([TGC_PLUS_URL1, course5]))
-        coursePlusURLs.append(''.join([TGC_PLUS_URL2, course6]))
-        coursePlusURLs.append(''.join([TGC_PLUS_URL1, course7]))
-        coursePlusURLs.append(''.join([TGC_PLUS_URL2, course8]))
+        re_course = re.compile(course, re.DOTALL | re.IGNORECASE)
         
-        courseSplit = course2.split('-')
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        requestPlus = urllib2.Request(TGC_PLUS_ALL_URL)
+        requestPlus.add_header('User-Agent', USER_AGENT)
+        try:
+            f = urllib2.urlopen(requestPlus, context=ctx)
+            htmlPlus = f.read()
+        except urllib2.HTTPError:        
+            Log("urllib2 HTTPError")
+            pass
+
+        for line in htmlPlus.splitlines():
+            linklst = linkre.findall(line)
+            ctitlelst = ctitlere.findall(line)
+            if linklst:
+                link = linklst[0]
+                link = link.split(':',1)[-1]
+                link = link.replace(',', '')
+                link = link.replace('"', '')
+                if '?' in link:
+                    link = link.split('?',1)[0]
+                if not linkre.search(link):
+                    courses['CLINK'].append(link)
+            if ctitlelst:
+                ctitle = ctitlelst[0]
+                ctitle = ctitle.split(':',1)[-1]
+                ctitle = ctitle.replace(',', '')
+                ctitle = ctitle.replace('"', '')
+                if not ctitlere.search(ctitle):
+                    courses['CTITLE'].append(ctitle)
         
-        i=1
-        for sep in separator:
-            for splt in courseSplit:
-                if i == 1:
-                    COURSE = COURSE + splt
-                    COURSEa = COURSEa + sep + splt
-                    COURSEthe = COURSEthe + sep + splt
-                elif i <=len(courseSplit):
-                    COURSE = COURSE + sep + splt
-                    COURSEa = COURSEa + sep + splt
-                    COURSEthe = COURSEthe + sep + splt    
-                    if sep == separator[0]:
-                        coursePlusURLs.append(''.join([TGC_PLUS_URL1, COURSE]))
-                        coursePlusURLs.append(''.join([TGC_PLUS_URL1, COURSEa]))
-                        coursePlusURLs.append(''.join([TGC_PLUS_URL1, COURSEthe]))
-                    else:
-                        coursePlusURLs.append(''.join([TGC_PLUS_URL2, COURSE]))
-                        coursePlusURLs.append(''.join([TGC_PLUS_URL2, COURSEa]))
-                        coursePlusURLs.append(''.join([TGC_PLUS_URL2, COURSEthe]))
-                i = i + 1
-            COURSE = ''
-            COURSEa = 'a'
-            COURSEthe = 'the' 
-            i=1
+        i=0
+        for title, value in courses.iteritems():
+            if title == 'CTITLE':
+                for xtitle in value:
+                    re_course_match = re_course.search(xtitle)
+                    if re_course_match is not None:
+                        Log("TGC PLUS MATCH FOUND!") 
+                        sResults.append(i)
+                        sResultsSPAN.append(re_course_match.span())
+             
+                    i = i + 1
+        for spanR in sResultsSPAN:
+            spanLen.append(spanR[1] - spanR[0])
+            
+
+        try:
+            cindex = spanLen.index(max(spanLen))
+            matchindex = sResults[cindex]
+            Log("TGC+ match found for: %s" % fixCourse)
+            Log("%s : %s" % (courses['CTITLE'][matchindex], courses['CLINK'][matchindex]))        
+            plusURL = ''.join([TGC_PLUS_COURSE_URL, courses['CLINK'][matchindex].strip()])
+            Log("%s" % plusURL)
+        except ValueError:
+            Log("No indexes to find b/c no matches in TGC+ courses")
+            
+            
+        return plusURL 
+
+    
         
-        
-        #URLs.extend((coursePlusURL1, coursePlusURL2, coursePlusURL3, coursePlusURL4, coursePlusURL5, coursePlusURL6, coursePlusURL7, coursePlusURL8))
-        return coursePlusURLs
-        
-    def getLectureThumbs(self, URLs):
+    def getLectureThumbs(self, url):
         lectureThumbs = []
         i=1
     
-        for url in URLs:
-            Log("Finding lecture thumbs URL: %s" % url)
-            ctx = ssl.create_default_context()
-            ctx.check_hostname = False
-            ctx.verify_mode = ssl.CERT_NONE
-            requestPlus = urllib2.Request(url)
-            requestPlus.add_header('User-Agent', USER_AGENT)
-            try:
-                f = urllib2.urlopen(requestPlus, context=ctx)
-                htmlPlus = f.read()
-            except urllib2.HTTPError:        
-                Log("urllib2 HTTPError")
-                pass
+        Log("Finding lecture thumbs URL: %s" % url)
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        requestPlus = urllib2.Request(url)
+        requestPlus.add_header('User-Agent', USER_AGENT)
+        try:
+            f = urllib2.urlopen(requestPlus, context=ctx)
+            htmlPlus = f.read()
+        except urllib2.HTTPError:        
+            Log("urllib2 HTTPError")
+            pass
 
-            soup = BeautifulSoup(htmlPlus)
-            lectureThumbBlock = soup.findAll('div', { 'class' : 'list-tray-item-image-container'} )
-    
-            for lThumb in lectureThumbBlock:
-                link = lThumb.img
-                try: 
-                    thumbImg = link['src']
-                except KeyError:
-                        thumbImg = link['data-src']
-                Log("Lecture %s thumbURL: %s" % (i, thumbImg))
-                i += 1
-                lectureThumbs.append(thumbImg)
-            
-            if lectureThumbs:
-                Log("Found Lecture Thumbs! Quitting getLectureThumbs()")
-                break
-            else:
-                Log("No Lecture thumbs found at url: %s" % url)
+        soup = BeautifulSoup(htmlPlus)
+        lectureThumbBlock = soup.findAll('div', { 'class' : 'list-tray-item-image-container'} )
+        for lThumb in lectureThumbBlock:
+            link = lThumb.img
+            try: 
+                thumbImg = link['src']
+            except KeyError:
+                thumbImg = link['data-src']
+            Log("Lecture %s thumbURL: %s" % (i, thumbImg))
+            i += 1
+            lectureThumbs.append(thumbImg)
+       
+        if lectureThumbs:
+            Log("Found Lecture Thumbs! Quitting getLectureThumbs()")
+        else:
+            Log("No Lecture thumbs found at url: %s" % url)
                 
         return lectureThumbs
 
@@ -569,9 +517,9 @@ class TGCAgent(Agent.TV_Shows):
         course = course.replace(',', '')
         course = course.replace('?', '')
         course = course.replace(' ', '.*')
-        course = course.replace('The', '')
-        course = course.replace ('the', '')
-        course = course.replace ('of', '')
+        course = course.replace('The', '.*')
+        course = course.replace ('the', '.*')
+        course = course.replace ('of', '.*')
 
         
         searchURL = ''.join([TGC_SEARCH_URL,mdatashow])
@@ -770,9 +718,11 @@ class TGCAgent(Agent.TV_Shows):
         eTitleData = parser2.data
         
         Log("Visiting TGC+ companion website if it exists...")
-        coursePlusURLs = self.coursePlusURLs(metadata.title)
-        lThumbs = self.getLectureThumbs(coursePlusURLs)
-
+        coursePlusURL = self.searchPlusURL(metadata.title)
+        if coursePlusURL is not None:
+            lThumbs = self.getLectureThumbs(coursePlusURL)
+        else:
+            Log("No TGC+ companion site to retrieve lecture thumbs.")
         Log("Updating episode data")
         @parallelize
         def UpdateEpisodes(html=html, eSummaryData=eSummaryData, eTitleData=eTitleData, lecturer=lecturer):
