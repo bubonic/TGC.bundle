@@ -371,7 +371,7 @@ class TGCAgent(Agent.TV_Shows):
             Log("%s" % plusURL)
         except ValueError:
             Log("No indexes to find b/c no matches in TGC+ courses")
-            
+            plusURL = None
             
         return plusURL 
 
@@ -723,6 +723,7 @@ class TGCAgent(Agent.TV_Shows):
             lThumbs = self.getLectureThumbs(coursePlusURL)
         else:
             Log("No TGC+ companion site to retrieve lecture thumbs.")
+            lThumbs = None
         Log("Updating episode data")
         @parallelize
         def UpdateEpisodes(html=html, eSummaryData=eSummaryData, eTitleData=eTitleData, lecturer=lecturer):
