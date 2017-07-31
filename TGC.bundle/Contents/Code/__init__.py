@@ -291,17 +291,19 @@ class TGCAgent(Agent.TV_Shows):
         
         return DESC.strip()
     
-    def searchPlusURL(self, course):
+    def searchPlusURL(self, course, courseID):
         fixCourse = course
         sResultsSPAN = [ ]
         sResults = [ ]
         spanLen = [ ]
         plusURL = ''
+        course_found = 0
         
-        courses = { 'CTITLE': [], 'CLINK': [] }
+        courses = { 'CTITLE': [], 'CLINK': [], 'CID': [] }
         
         linkre = re.compile("COURSE_LINK.*")
         ctitlere = re.compile("COURSE_TITLE.*")
+        cnumre = re.compile("COURSE_ID.*")
         
         course = course.replace(':', '')
         course = course.replace('"', '')
@@ -330,6 +332,7 @@ class TGCAgent(Agent.TV_Shows):
         for line in htmlPlus.splitlines():
             linklst = linkre.findall(line)
             ctitlelst = ctitlere.findall(line)
+            cidlst = cnumre.findall(line)
             if linklst:
                 link = linklst[0]
                 link = link.split(':',1)[-1]
@@ -346,34 +349,58 @@ class TGCAgent(Agent.TV_Shows):
                 ctitle = ctitle.replace('"', '')
                 if not ctitlere.search(ctitle):
                     courses['CTITLE'].append(ctitle)
+            if cidlst:
+                cnum = cidlst[0]
+                cnum = cnum.split(':',1)[-1]
+                cnum = cnum.replace(',','')
+                cnum = cnum.strip()
+                if not cnumre.search(cnum):
+                    courses['CID'].append(cnum)
+
         
         i=0
-        for title, value in courses.iteritems():
-            if title == 'CTITLE':
-                for xtitle in value:
-                    re_course_match = re_course.search(xtitle)
-                    if re_course_match is not None:
-                        Log("TGC PLUS MATCH FOUND!") 
-                        sResults.append(i)
-                        sResultsSPAN.append(re_course_match.span())
+        if courseID != 0:
+            for key, value in courses.iteritems():
+                if key == 'CID':
+                    for CNUM in value:
+                        if CNUM == courseID:
+                            course_found = 1
+                            break
+                        i = i + 1
+            Log("TGC+ COURSE FOUND!")
+            Log(" %s : %s : %s" % (courses['CID'][i], courses['CTITLE'][i], courses['CLINK'][i]))
+            plusURL = ''.join([TGC_PLUS_COURSE_URL, courses['CLINK'][i].strip()])
+        else:                
+            for key, value in courses.iteritems():
+                if key == 'CTITLE':
+                    for xtitle in value:
+                        re_course_match = re_course.search(xtitle)
+                        if re_course_match is not None:
+                            Log("TGC PLUS MATCH FOUND!") 
+                            sResults.append(i)
+                            sResultsSPAN.append(re_course_match.span())
              
-                    i = i + 1
-        for spanR in sResultsSPAN:
-            spanLen.append(spanR[1] - spanR[0])
+                        i = i + 1
+            for spanR in sResultsSPAN:
+                spanLen.append(spanR[1] - spanR[0])
             
 
-        try:
-            cindex = spanLen.index(max(spanLen))
-            matchindex = sResults[cindex]
-            Log("TGC+ match found for: %s" % fixCourse)
-            Log("%s : %s" % (courses['CTITLE'][matchindex], courses['CLINK'][matchindex]))        
-            plusURL = ''.join([TGC_PLUS_COURSE_URL, courses['CLINK'][matchindex].strip()])
-            Log("%s" % plusURL)
-        except ValueError:
-            Log("No indexes to find b/c no matches in TGC+ courses")
-            plusURL = None
-            
-        return plusURL 
+            try:
+                cindex = spanLen.index(max(spanLen))
+                matchindex = sResults[cindex]
+                Log("TGC+ match found for: %s" % fixCourse)
+                Log("%s : %s" % (courses['CTITLE'][matchindex], courses['CLINK'][matchindex]))        
+                plusURL = ''.join([TGC_PLUS_COURSE_URL, courses['CLINK'][matchindex].strip()])
+                Log("%s" % plusURL)
+                course_found = 1
+            except ValueError:
+                Log("No indexes to find b/c no matches in TGC+ courses")
+                plusURL = None
+                
+        if course_found == 1:   
+            return plusURL
+        else:
+            return None 
 
     
         
@@ -718,7 +745,7 @@ class TGCAgent(Agent.TV_Shows):
         eTitleData = parser2.data
         
         Log("Visiting TGC+ companion website if it exists...")
-        coursePlusURL = self.searchPlusURL(metadata.title)
+        coursePlusURL = self.searchPlusURL(metadata.title, cNum)
         if coursePlusURL is not None:
             lThumbs = self.getLectureThumbs(coursePlusURL)
         else:

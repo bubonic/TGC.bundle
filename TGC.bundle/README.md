@@ -18,7 +18,7 @@ or
 
 2. FULL COURSE NAME (TGC####) S01E## Some text.ext
 
-(where TGC#### is the course number found on the TGC website). If you choose 2. the Agent should always locate the course and download the necessary metadata.
+(where TGC#### is the course number found on the TGC website). If you choose 2. the Agent should always locate the course and download the necessary metadata. Also, adding the course number to the filenames as show above will result in a sure method of gathering the lecture thumbnails from the TGC+ website for available courses. Thus, it is best to name each lecture with the second method.  
 
 and 
 
