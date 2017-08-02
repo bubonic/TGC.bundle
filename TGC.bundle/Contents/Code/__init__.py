@@ -400,6 +400,7 @@ class TGCAgent(Agent.TV_Shows):
         if course_found == 1:   
             return plusURL
         else:
+            Log("NO TGC+ COURSE FOUND.")
             return None 
 
     
