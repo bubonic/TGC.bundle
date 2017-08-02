@@ -364,12 +364,12 @@ class TGCAgent(Agent.TV_Shows):
                 if key == 'CID':
                     for CNUM in value:
                         if CNUM == courseID:
+                            Log("TGC+ COURSE FOUND!")
+                            Log("%s : %s : %s" % (courses['CID'][i], courses['CTITLE'][i], courses['CLINK'][i]))
                             course_found = 1
+                            plusURL = ''.join([TGC_PLUS_COURSE_URL, courses['CLINK'][i].strip()])
                             break
-                        i = i + 1
-            Log("TGC+ COURSE FOUND!")
-            Log(" %s : %s : %s" % (courses['CID'][i], courses['CTITLE'][i], courses['CLINK'][i]))
-            plusURL = ''.join([TGC_PLUS_COURSE_URL, courses['CLINK'][i].strip()])
+                        i = i + 1 
         else:                
             for key, value in courses.iteritems():
                 if key == 'CTITLE':
