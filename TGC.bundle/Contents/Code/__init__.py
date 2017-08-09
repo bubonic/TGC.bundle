@@ -544,12 +544,13 @@ class TGCAgent(Agent.TV_Shows):
         course = course.replace('"', '')
         course = course.replace(',', '')
         course = course.replace('?', '')
-        course = course.replace('-', '.*')
+        course = course.replace('-', '')
+        course = course.replace('–', '' )
         course = course.replace(' ', '.*')
         course = course.replace('The', '.*')
         course = course.replace ('the', '.*')
         course = course.replace ('of', '.*')
-
+        course = ''.join(['.*', course])
         
         searchURL = ''.join([TGC_SEARCH_URL,mdatashow])
         request = urllib2.Request(searchURL)
@@ -682,6 +683,7 @@ class TGCAgent(Agent.TV_Shows):
         #show = show.replace('" ', ' quot ')
         show = show.replace('?', '')
         show = show.replace("'", "-")
+        show = show.replace('–', ' ')
         show = show.replace('  ', ' ')
         show = show.replace(' ', '-')
         courseURL = ''.join([TGC_COURSE_URL, show, '.html'])
