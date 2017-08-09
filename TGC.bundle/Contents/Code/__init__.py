@@ -218,7 +218,7 @@ class TGCAgent(Agent.TV_Shows):
             self.c = text
             if self.data and self.recording:
                 last = self.data.pop()
-                self.newdata = ' '.join([last,self.c])
+                self.newdata = ''.join([last,self.c])
                 self.data.append(self.newdata)
                 #print "Newdata:     ", self.newdata
                 self.switch = 1
@@ -544,6 +544,7 @@ class TGCAgent(Agent.TV_Shows):
         course = course.replace('"', '')
         course = course.replace(',', '')
         course = course.replace('?', '')
+        course = course.replace('-', '.*')
         course = course.replace(' ', '.*')
         course = course.replace('The', '.*')
         course = course.replace ('the', '.*')
