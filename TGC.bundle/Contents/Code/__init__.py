@@ -545,6 +545,7 @@ class TGCAgent(Agent.TV_Shows):
         course = course.replace(',', '')
         course = course.replace('?', '')
         course = course.replace('-', '')
+        course = course.replace('&', '.*')
         course = course.replace('–', '' )
         course = course.replace(' ', '.*')
         course = course.replace('The', '.*')
