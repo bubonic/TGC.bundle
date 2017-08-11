@@ -299,11 +299,13 @@ class TGCAgent(Agent.TV_Shows):
         plusURL = ''
         course_found = 0
         
-        courses = { 'CTITLE': [], 'CLINK': [], 'CID': [] }
-        
+        courses = { 'CTITLE': [], 'CLINK': [], 'CID': [], 'TAX1': [], 'TAX2': [] }
+        courseRET = { 'URL': None, 'TAX1': None, 'TAX2': None }
         linkre = re.compile("COURSE_LINK.*")
         ctitlere = re.compile("COURSE_TITLE.*")
         cnumre = re.compile("COURSE_ID.*")
+        tax1re = re.compile("TAXONOMY1.*")
+        tax2re = re.compile("TAXONOMY2.*")
         
         course = course.replace(':', '')
         course = course.replace('"', '')
@@ -333,6 +335,8 @@ class TGCAgent(Agent.TV_Shows):
             linklst = linkre.findall(line)
             ctitlelst = ctitlere.findall(line)
             cidlst = cnumre.findall(line)
+            tax1lst = tax1re.findall(line)
+            tax2lst = tax2re.findall(line)
             if linklst:
                 link = linklst[0]
                 link = link.split(':',1)[-1]
@@ -355,7 +359,23 @@ class TGCAgent(Agent.TV_Shows):
                 cnum = cnum.replace(',','')
                 cnum = cnum.strip()
                 if not cnumre.search(cnum):
-                    courses['CID'].append(cnum)
+                    courses['CID'].append(cnum)           
+            if tax1lst:
+                tax1 = tax1lst[0]
+                tax1 = tax1.split(':',1)[-1]
+                tax1 = tax1.replace(',','')
+                tax1 = tax1.replace('"', '')
+                tax1 = tax1.strip()
+                if not tax1re.search(tax1):
+                    courses['TAX1'].append(tax1)
+            if tax2lst:
+                tax2 = tax2lst[0]
+                tax2 = tax2.split(':',1)[-1]
+                tax2 = tax2.replace(',','')
+                tax2 = tax2.replace('"', '')
+                tax2 = tax2.strip()
+                if not tax2re.search(tax2):
+                    courses['TAX2'].append(tax2)
 
         
         i=0
@@ -368,6 +388,9 @@ class TGCAgent(Agent.TV_Shows):
                             Log("%s : %s : %s" % (courses['CID'][i], courses['CTITLE'][i], courses['CLINK'][i]))
                             course_found = 1
                             plusURL = ''.join([TGC_PLUS_COURSE_URL, courses['CLINK'][i].strip()])
+                            courseRET['URL'] = plusURL
+                            courseRET['TAX1'] = courses['TAX1'][i]
+                            courseRET['TAX2'] = courses['TAX2'][i]
                             break
                         i = i + 1 
         else:                
@@ -391,6 +414,9 @@ class TGCAgent(Agent.TV_Shows):
                 Log("TGC+ match found for: %s" % fixCourse)
                 Log("%s : %s" % (courses['CTITLE'][matchindex], courses['CLINK'][matchindex]))        
                 plusURL = ''.join([TGC_PLUS_COURSE_URL, courses['CLINK'][matchindex].strip()])
+                courseRET['URL'] = plusURL
+                courseRET['TAX1'] = courses['TAX1'][matchindex]
+                courseRET['TAX2'] = courses['TAX2'][matchindex]
                 Log("%s" % plusURL)
                 course_found = 1
             except ValueError:
@@ -398,7 +424,7 @@ class TGCAgent(Agent.TV_Shows):
                 plusURL = None
                 
         if course_found == 1:   
-            return plusURL
+            return courseRET
         else:
             Log("NO TGC+ COURSE FOUND.")
             return None 
@@ -750,9 +776,10 @@ class TGCAgent(Agent.TV_Shows):
         eTitleData = parser2.data
         
         Log("Visiting TGC+ companion website if it exists...")
-        coursePlusURL = self.searchPlusURL(metadata.title, cNum)
-        if coursePlusURL is not None:
-            lThumbs = self.getLectureThumbs(coursePlusURL)
+        coursePlusInfo = self.searchPlusURL(metadata.title, cNum)
+        if coursePlusInfo is not None:
+            metadata.genres = [coursePlusInfo['TAX1'], coursePlusInfo['TAX2']]
+            lThumbs = self.getLectureThumbs(coursePlusInfo['URL'])
         else:
             Log("No TGC+ companion site to retrieve lecture thumbs.")
             lThumbs = None
