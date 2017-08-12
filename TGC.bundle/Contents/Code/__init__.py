@@ -8,6 +8,7 @@ import sys
 import os
 import re
 
+
 try:
     # For Python 3.0 and later
     from urllib.request import urlopen
@@ -33,6 +34,7 @@ TGC_PLUS_URL1 = 'https://www.thegreatcoursesplus.com/show/'
 USER_AGENT = 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:49.0) Gecko/20100101 Firefox/49.0'
 ONE_DAY = datetime.timedelta(days=1)
 TODAY = datetime.date.today()
+TGCDB = 'https://drive.google.com/uc?export=download&id=0B0iKKQfjnk-ANGc4ZGxNa3pQZWc'
 #product_category = {'901' : "Economics & Finance", '902' : 'High School', '904' : 'Fine-Arts', '905' : 'Literature & Language', '907' : 'Philosophy, Intellectual History','909' : 'Religion', '910' : 'Mathematics', '918' : 'History', '926': 'Science', '927': 'Better Living'   }
 
 # For Sure yo, coded by bubonic
@@ -290,6 +292,31 @@ class TGCAgent(Agent.TV_Shows):
                 DESC = ''.join([DESC,desc])
         
         return DESC.strip()
+    
+    def getGenre(self, cnum):
+        subjs = []
+        
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        requestPlus = urllib2.Request(TGCDB)
+        requestPlus.add_header('User-Agent', USER_AGENT)
+        try:
+            f = urllib2.urlopen(requestPlus, context=ctx)
+            dbfile = f.read()
+        except urllib2.HTTPError:        
+            Log("urllib2 HTTPError")
+            pass
+        #response = urllib2.urlopen('https://drive.google.com/uc?export=download&id=0B0iKKQfjnk-ANGc4ZGxNa3pQZWc')
+        #dbfile = response.read()
+        
+        for course in dbfile.splitlines():
+            courseID = course.split('|',1)[0]
+            if cnum == courseID:
+                genre = course.split('|',2)[-1]
+                subjs.append(genre)
+
+        return subjs
     
     def searchPlusURL(self, course, courseID):
         fixCourse = course
@@ -783,6 +810,16 @@ class TGCAgent(Agent.TV_Shows):
         else:
             Log("No TGC+ companion site to retrieve lecture thumbs.")
             lThumbs = None
+        
+        if cNum != 0:
+            Log('Getting genre...')
+            subjs = self.getGenre(cNum)
+            Log('Genres: %s' % subjs)
+            metadata.genres = subjs
+        else:
+            Log('No Course ID, so no genres!')
+                
+        
         Log("Updating episode data")
         @parallelize
         def UpdateEpisodes(html=html, eSummaryData=eSummaryData, eTitleData=eTitleData, lecturer=lecturer):
