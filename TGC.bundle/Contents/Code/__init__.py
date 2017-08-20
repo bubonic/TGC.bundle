@@ -594,6 +594,7 @@ class TGCAgent(Agent.TV_Shows):
         mdatashow = mdatashow.replace(' ', '+')
         
         course = course.replace(':', '')
+        course = course.replace("'s", '')
         course = course.replace('"', '')
         course = course.replace(',', '')
         course = course.replace('?', '')
