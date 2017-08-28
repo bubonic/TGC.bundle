@@ -606,12 +606,24 @@ class TGCAgent(Agent.TV_Shows):
         course = course.replace ('the', '.*')
         course = course.replace ('of', '.*')
         course = ''.join(['.*', course])
+
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+    
         
         searchURL = ''.join([TGC_SEARCH_URL,mdatashow])
         request = urllib2.Request(searchURL)
         request.add_header('User-Agent', USER_AGENT)
-        opener = urllib2.build_opener()
-        html = opener.open(request).read()
+        try:
+            f = urllib2.urlopen(request, context=ctx)
+            html = f.read()
+        except urllib2.HTTPError:        
+            Log("urllib2 HTTPError")
+            pass
+
+#        opener = urllib2.build_opener()
+#        html = opener.open(request, context=ctx).read()
         
         re_course = re.compile(course, re.DOTALL | re.IGNORECASE)
         re_courseSet = re.compile("\(Set\)")
@@ -651,8 +663,14 @@ class TGCAgent(Agent.TV_Shows):
                 resultsURL = sResults[sTitleResults[cindex]]
                 request = urllib2.Request(resultsURL)
                 request.add_header('User-Agent', USER_AGENT)
-                opener = urllib2.build_opener()
-                html = opener.open(request).read()
+                try:
+                    f = urllib2.urlopen(request, context=ctx)
+                    html = f.read()
+                except urllib2.HTTPError:        
+                    Log("urllib2 HTTPError")
+                    pass    
+#                opener = urllib2.build_opener()
+#                html = opener.open(request).read()
                 soup = BeautifulSoup(html)
   
                 #courseNum = soup.find("div", { "class" : "course-number" } )
@@ -736,7 +754,7 @@ class TGCAgent(Agent.TV_Shows):
         show = show.replace(',', '')
         show = show.replace('"', ' quot ')
         #show = show.replace('" ', ' quot ')
-        show = show.replace('?', '')
+        show = show.replace('?', '-')
         show = show.replace("'", "-")
         show = show.replace('–', ' ')
         show = show.replace('  ', ' ')
@@ -747,15 +765,20 @@ class TGCAgent(Agent.TV_Shows):
         #coursePlusURL = coursePlusURL[:-1]
         Log("update() CourseURL: %s" % courseURL)
         #Log("update() CoursePlusURL: %s" % coursePlusURL)
-        
+
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+         
         Log("calling urllib2 and visiting coursURL")
         request = urllib2.Request(courseURL)
         request.add_header('User-Agent', USER_AGENT)
-        opener = urllib2.build_opener()
+#        opener = urllib2.build_opener()
         
-
         try:
-            html = opener.open(request).read()
+#            html = opener.open(request).read()
+            f = urllib2.urlopen(request, context=ctx)
+            html = f.read() 
         except urllib2.HTTPError:
             Log("courseURL not found... Searching for related courses: %s" % metadata.title)
             Results = self.SearchCourse(metadata.title, cNum)
@@ -764,8 +787,11 @@ class TGCAgent(Agent.TV_Shows):
             metadata.title = Results['title']
             request = urllib2.Request(scourseURL)
             request.add_header('User-Agent', USER_AGENT)
-            opener = urllib2.build_opener()
-            html = opener.open(request).read()
+            f = urllib2.urlopen(request, context=ctx)
+            html = f.read()
+ 
+#            opener = urllib2.build_opener()
+#            html = opener.open(request).read()
             
 
         data = self.getDESC(html)
