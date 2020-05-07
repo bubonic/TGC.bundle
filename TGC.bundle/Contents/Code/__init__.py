@@ -28,7 +28,7 @@ TGC_COURSE_URL = 'http://www.thegreatcourses.com/courses/'
 TGC_SEARCH_URL = 'http://www.thegreatcourses.com/search/?q='
 TGC_PLUS_COURSE_URL = 'https://www.thegreatcoursesplus.com/'
 TGC_PLUS_SEARCH_URL = 'https://www.thegreatcoursesplus.com/search/?q='
-TGC_PLUS_ALL_URL = 'https://www.thegreatcoursesplus.com/allcourses'
+TGC_PLUS_ALL_URL = 'https://www.thegreatcoursesplus.com/categories'
 TGC_PLUS_URL2 = 'https://www.thegreatcoursesplus.com/'
 TGC_PLUS_URL1 = 'https://www.thegreatcoursesplus.com/show/'
 USER_AGENT = 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:49.0) Gecko/20100101 Firefox/49.0'
@@ -411,15 +411,14 @@ class TGCAgent(Agent.TV_Shows):
                 if key == 'CID':
                     for CNUM in value:
                         if CNUM == courseID:
-                            if '[' not in courses['CTITLE'][i]:
-                                Log("TGC+ COURSE FOUND!")
-                                Log("%s : %s : %s" % (courses['CID'][i], courses['CTITLE'][i], courses['CLINK'][i]))
-                                course_found = 1
-                                plusURL = ''.join([TGC_PLUS_COURSE_URL, courses['CLINK'][i].strip()])
-                                courseRET['URL'] = plusURL
-                                courseRET['TAX1'] = courses['TAX1'][i]
-                                courseRET['TAX2'] = courses['TAX2'][i]
-                                break
+                            Log("TGC+ COURSE FOUND!")
+                            Log("%s : %s : %s" % (courses['CID'][i], courses['CTITLE'][i], courses['CLINK'][i]))
+                            course_found = 1
+                            plusURL = ''.join([TGC_PLUS_COURSE_URL, courses['CLINK'][i].strip()])
+                            courseRET['URL'] = plusURL
+                            courseRET['TAX1'] = courses['TAX1'][i]
+                            courseRET['TAX2'] = courses['TAX2'][i]
+                            break
                         i = i + 1 
         else:                
             for key, value in courses.iteritems():
@@ -755,7 +754,7 @@ class TGCAgent(Agent.TV_Shows):
         show = show.replace(',', '')
         show = show.replace('"', ' quot ')
         #show = show.replace('" ', ' quot ')
-        show = show.replace('?', ' ')
+        show = show.replace('?', '-')
         show = show.replace("'", "-")
         show = show.replace('–', ' ')
         show = show.replace('  ', ' ')
@@ -830,8 +829,9 @@ class TGCAgent(Agent.TV_Shows):
         eSummaryData = parser.data
         eTitleData = parser2.data
         
-        Log("Visiting TGC+ companion website if it exists...")
-        coursePlusInfo = self.searchPlusURL(metadata.title, cNum)
+        #Log("Visiting TGC+ companion website if it exists...")
+        #coursePlusInfo = self.searchPlusURL(metadata.title, cNum)
+        coursePlusInfo = None
         if coursePlusInfo is not None:
             metadata.genres = [coursePlusInfo['TAX1'], coursePlusInfo['TAX2']]
             lThumbs = self.getLectureThumbs(coursePlusInfo['URL'])
@@ -883,13 +883,12 @@ class TGCAgent(Agent.TV_Shows):
                                         Log("No Episode thumbs avaialbe")
                                     else:
                                         Log("Episode thumbs are avaialbe!")
-                                        if int(episode_num) <= len(lThumbs):
-                                            if lThumbs[int(episode_num) - 1] not in episode.thumbs:
-                                                try:
-                                                    episode.thumbs[lThumbs[int(episode_num) - 1 ]] = Proxy.Preview(HTTP.Request(lThumbs[int(episode_num) - 1]).content, sort_order=1)
-                                                except: 
-                                                    Log("Download of thumb image failed! - %s" % lThumbs[int(episode_num)])
-                                                    pass
+                                        if lThumbs[int(episode_num) - 1] not in episode.thumbs:
+                                            try:
+                                                episode.thumbs[lThumbs[int(episode_num) - 1 ]] = Proxy.Preview(HTTP.Request(lThumbs[int(episode_num) - 1]).content, sort_order=1)
+                                            except: 
+                                                Log("Download of thumb image failed! - %s" % lThumbs[int(episode_num)])
+                                                pass
                                         
                                     Log("Getting Lecturer")
 
