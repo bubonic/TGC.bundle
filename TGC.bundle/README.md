@@ -1,6 +1,6 @@
 # BROKEN
 
-This PLEX agent is no broken and requires an entire rewrite. Anyone willing to take this on should probably look towards Selenium WebDriver to fix it. It's possible I may
+This PLEX agent is now broken and requires an entire rewrite. Anyone willing to take this on should probably look towards Selenium WebDriver to fix it. It's possible I may
 find time to get this up and running in the future, but as it stands it is now a broken agent. :*(
 
 # Requirements
