@@ -1,6 +1,6 @@
 # BROKEN
 
-This PLEX agent is now broken and requires a rewrite. We are working on a solution, so hang tight for a new release in the coming months. 
+This PLEX agent is now broken and requires a rewrite. We are working on a solution, so hang tight for a new release in the coming weeks. 
 
 # Requirements
 
