@@ -102,3 +102,7 @@ This agent was was very time consuming to create and if you are obliged in offer
 If you wish to remain anonymous and want to donate via Bitcoin, please send any amount to the following address:
 
 **16h8ZqQpa3niwPWjTgtY584R7Z2txYGkYL**
+
+## Monero
+
+**89vAxHU8L9fYwa6KCT8TwX63Y5vaGhikz1o2zqJbjj8mKrhogY9PBEmiCcTxity2NjPCa6HsQ1gjnJH3WCBKWDjjHj5Q9F7**
