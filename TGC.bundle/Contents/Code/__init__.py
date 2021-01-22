@@ -1,24 +1,46 @@
 # coding: utf-8
+#
+# TGC.bundle v2.0  (h.l. mencken)
+# oh fo sho yo
+# coded by: bubonic
+
 from HTMLParser import HTMLParser, HTMLParseError
 from htmlentitydefs import name2codepoint
-from BeautifulSoup import BeautifulSoup 
+
+
 import datetime
 import ssl
 import sys
 import os
 import re
+import time
+import random
+import textwrap
+import urllib3
+import shutil
+import subprocess
+import hashlib
+import platform
+
+from io import open
+from whichcraft import which
+
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
+from selenium.webdriver.firefox.options import Options
+from pyvirtualdisplay import Display
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+from bs4 import BeautifulSoup
 
 
-try:
-    # For Python 3.0 and later
-    from urllib.request import urlopen
-    import urllib
-except ImportError:
-    # Fall back to Python 2's urllib2
-    from urllib2 import urlopen
-    import urllib2
-    
+# EDIT THESE
+FIREFOX = "/usr/local/bin/firefox/firefox"
+GECKODRIVER = "/usr/local/bin/geckodriver"
+CONVERT = "/usr/bin/convert"
 
+# Global Settings    
+PLEXROOT = Core.app_support_path
 TGC_COURSE_URL = 'http://www.thegreatcourses.com/courses/'
 TGC_SEARCH_URL = 'http://www.thegreatcourses.com/search/?q='
 TGC_PLUS_COURSE_URL = 'https://www.thegreatcoursesplus.com/'
@@ -30,23 +52,115 @@ USER_AGENT = 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:49.0) Gecko/20100101 Firefo
 ONE_DAY = datetime.timedelta(days=1)
 TODAY = datetime.date.today()
 TGCDB = 'https://drive.google.com/uc?export=download&id=0B0iKKQfjnk-ANGc4ZGxNa3pQZWc'
-#product_category = {'901' : "Economics & Finance", '902' : 'High School', '904' : 'Fine-Arts', '905' : 'Literature & Language', '907' : 'Philosophy, Intellectual History','909' : 'Religion', '910' : 'Mathematics', '918' : 'History', '926': 'Science', '927': 'Better Living'   }
+CHUNKSIZE = 8192
 
-# For Sure yo, coded by bubonic
+
+# Variables for Poster art and ImageMagick
+AgentImageFolder = os.path.join(PLEXROOT, "Plug-ins", "TGC.bundle", "Contents", "Resources")
+PosterTemplate = os.path.join(PLEXROOT, "Plug-ins", "TGC.bundle", "Contents", "Resources", "template.png")
+CourseArt = os.path.join(PLEXROOT, "Plug-ins", "TGC.bundle", "Contents", "Resources", "courseart")
+CArtResized = " "
+global FinalPoster
+FinalPoster = os.path.join(PLEXROOT, "Plug-ins", "TGC.bundle", "Contents", "Resources", "final-")
+
+
+# Need for ImageMagick to create proper poster art
+IMGcmd = [os.path.abspath(CONVERT), PosterTemplate, CArtResized , '-gravity', 'center', '-composite' , FinalPoster]
+RSZcmd = [os.path.abspath(CONVERT), CourseArt, '-resize', '780', CArtResized]
+
+# Firefox and gecko binaries
+firefox_binary = FirefoxBinary(os.path.abspath(FIREFOX))
+firefox_binary.add_command_line_options('--headless')
+gecko_binary = os.path.abspath(GECKODRIVER)
+
+
+# Platform
+PLATFORM = platform.system()
+CMDFINDER = "where" if platform.system() == "Windows" else "which"
+#product_category = {'901' : "Economics & Finance", '902' : 'High School', '904' : 'Fine-Arts', '905' : 'Literature & Language', '907' : 'Philosophy, Intellectual History','909' : 'Religion', '910' : 'Mathematics', '918' : 'History', '926': 'Science', '927': 'Better Living'   }
+def is_tool(name):
+
+    return which(name)
+
+def wait_until(timeout, period):
+    mustend = time.time() + timeout
+    while time.time() < mustend:
+        global UPDATEDONE
+        if UPDATEDONE:
+            UPDATEDONE = False 
+            return True
+        time.sleep(period)
+    return False
 
 def Start():
-
+    global display
     HTTP.CacheTime = CACHE_1DAY
     HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (iPad; CPU OS 7_0_4 like Mac OS X) AppleWebKit/537.51.1 (KHTML, like Gecko) Version/7.0 Mobile/11B554a Safari/9537.54'
     HTTP.Headers['Accept-Language'] = 'en-us'
     
+    if is_tool("convert") is None:
+        Log("Please install ImageMagick to continue. This is used for poster art image processing.")
+        sys.exit(7)
+    else:
+        global CONVERT
+        CONVERT = is_tool("convert")
+        Log("ImageMagick is installed.")
+    
+    if is_tool("geckodriver") is None:
+        Log("Please install geckodriver")
+        sys.exit(7)
+    else:
+        global GECKODRIVER
+        GECKODRIVER = is_tool("geckodriver")
+        Log("Geckodriver is installed.")
+    
+    
+        
+    if PLATFORM != "Windows":
+        Log("Starting Display...")
+        if is_tool("Xvfb") is not None:
+            display = Display(visible=0, size=(1366, 768))
+            display.start()
+        else:
+            Log("You need Xvfb installed to continue on Linux")
+            sys.exit(7)
+    Log("Staring Selenium driver...")
+    global driver
+    driver = startWebDriver()
+    global TABCOUNT
+    TABCOUNT = 0
+    global UPDATEDONE
+    UPDATEDONE = False
+
+
+def startWebDriver():
+    
+    options = Options()
+    options.headless = True
+    profile = webdriver.FirefoxProfile()
+    profile.set_preference("javascript.enabled", True)
+    profile.set_preference("webdriver.log.file", "/var/lib/plexmediaserver/Library/Application Support/Plex Media Server/Plug-ins/TGC.bundle/firefox.log");
+    #cap = DesiredCapabilities().FIREFOX
+    #cap["marionette"] = False
+    #profile.set_preference("general.useragent.override", "Mozilla/5.0 (X11; Linux x86_64; rv:38.0) Gecko/20100101 Firefox/38.0")
+    #profile.set_preference("headless", True)
+    #driver = webdriver.Firefox(profile, capabilities=cap, options=options, executable_path=gecko_binary, firefox_binary=firefox_binary)
+    driver = webdriver.Firefox(profile, options=options, executable_path=gecko_binary, firefox_binary=firefox_binary)
+    
+    return driver
+    
+    #driver = webdriver.Chrome(executable_path=os.path.abspath("chromedriver"),   chrome_options=chrome_options) 
+    #driver.set_window_size(1120, 550)
+    
+    
+
 class TGCAgent(Agent.TV_Shows):
     
     name = 'TGC'
     languages = [Locale.Language.English]
     primary_provider = True
     accepts_from = ['com.plexapp.agents.localmedia']
-
+    '''
     class MyDESCParser(HTMLParser):
         def __init__(self):
             HTMLParser.__init__(self)
@@ -262,32 +376,173 @@ class TGCAgent(Agent.TV_Shows):
             if self.recording:
                 self.data.append(data.strip())
     
-    def getRating(self, html):
-        soup = BeautifulSoup(html)
-        ratingBlock = soup.find('span', {'class' : 'BVRRNumber BVRRRatingNumber'})
-        rating = ratingBlock.getText()
-        rating = 2*float(rating)
-        return rating
-        
-    def getDESC(self, html):
-        DESC = ''
-        
-        parser = self.MyDESCParser()
-        parser.feed(html)
-        data = parser.data
-        
-        for desc in data:
-            if desc == "Hide Full Description":
-                break
-            elif desc == "Please Verify Account to Continue":
-                break
-            if desc.isspace():
-                DESC = "\n".join([DESC,desc])
-            else:
-                DESC = ''.join([DESC,desc])
-        
-        return DESC.strip()
+    '''
     
+    def processPoster(self, coursenum, courseArt):
+        # if i can get PIL to import I'll use this. 
+        '''
+        background = Image.open(PosterTemplate, 'r')
+        bg_w, bg_h = background.size
+        course = Image.open(CourseArt, 'r')
+        course_w, course_h = course.size
+        offset_course = ((bg_w - course_w) // 2, (bg_h - course_h) // 2 )
+        background.paste(course, offset_course)
+        background.save(FinalPoster)
+        '''
+        try:
+            Log("Resizing courseart...")
+            CourseArtResized = CourseArt + "-" + coursenum + "-780" + ".jpg"
+            rszcmd = [RSZcmd[0], courseArt, '-resize', '780', CourseArtResized]
+            subprocess.Popen(rszcmd)
+            
+            cmd = [IMGcmd[0], IMGcmd[1], CourseArtResized, IMGcmd[3], IMGcmd[4], IMGcmd[5], IMGcmd[6] + str(coursenum) + ".png"]
+            
+            FinalPosterTemp = os.path.join(PLEXROOT, "Plug-ins", "TGC.bundle", "Contents", "Resources", "final-")
+            
+            global FinalPoster
+            FinalPoster = FinalPosterTemp + str(coursenum) + ".png"
+            
+            Log("Creating Final Poster...")
+            subprocess.Popen(cmd)
+            Log(" " + FinalPoster)
+
+        except Exception as e:
+            print("OS Command failed: " + str(e))
+            
+    def getRating(self, HTML):
+        try: 
+            soup = BeautifulSoup(HTML, features='html.parser')
+            ratingBlock = soup.find('div', {'class' : 'bv-percent-recommend-container'})
+            rating = ratingBlock.getText().replace('% of reviewers recommend', '')
+            return int(rating)        
+        except Exception as e:
+            Log("Error getting rating: " + str(e))
+            return int(0)
+    
+    #def getDESC(self, html):
+    def getDESC(self, driver):
+        Description = ''
+        
+        driver.find_element_by_css_selector('.btn-ghost-secondary').click()
+        time.sleep(random.randint(25,35))
+        HTML = driver.page_source
+        
+        Log("Getting Description...")
+        time.sleep(random.randint(25,35))    
+        soup = BeautifulSoup(HTML, features="html.parser")
+        DescriptionBlock = soup.find('div', {'class' : 'ProductPage-Overview-Description'})
+        pDescBlock = DescriptionBlock.find_all(['p', 'li'])
+        
+        brre = re.compile("<br")
+        html_re = re.compile("<.*?>")
+        
+        wrapper = textwrap.TextWrapper(width=80)
+        wrapper.initial_indent = "\t • "
+        wrapper.subsequent_indent = "\t   "
+        Log("Textwrapping...")
+        for p in pDescBlock:
+            #print("%s" % str(p), end='\n')
+            paragraphs = re.split("<br\/>", str(p))
+            li = re.match("<li>(.*?)<\/li>", str(p))
+            for para in paragraphs: 
+                para = html_re.sub('', para)
+                if li is not None:
+                    #print('\t • %s' %  html_re.sub('',li.group(0)))
+                    for meh in wrapper.wrap(html_re.sub('',li.group(0))):
+                        #Description = ''.join([Description, meh,'\n'])
+                        Description = '\n'.join([Description, meh])
+                else:
+                    Description = '\n'.join([Description, para, '\n'])
+                    #print('\n %s' % para, end='\n')
+                
+        return Description
+        
+    def getLectureTitles(self, driver):
+        try:
+            driver.find_element_by_css_selector("button.btn-link-secondary:nth-child(3)").click()
+            time.sleep(random.randint(10,15))
+        except:
+            Log("10 or less lectures")
+            pass
+        HTML = driver.page_source
+        soup = BeautifulSoup(HTML, features="html.parser")
+        LectureHeaderBlock = soup.find_all('div', {'class' : 'ProductLectureList-Lecture-Header'})
+        LectureTitles = []
+        k=1
+        for block in LectureHeaderBlock:
+            LectureTitles.append(block.getText().replace(str(k), ''))
+            k += 1
+        
+        return LectureTitles
+    
+    def getLectureDescs(self, driver):
+        try: 
+            driver.find_element_by_css_selector("button.btn-link-secondary:nth-child(3)").click()
+        except:
+            pass
+        time.sleep(random.randint(5,9))
+        LDescBtns = driver.find_elements_by_class_name("AccordionToggle")
+        
+        LectureDescriptions = []
+        k = 0
+         
+        for button in LDescBtns:
+            try: 
+                print("Button %s..." % k)
+                driver.execute_script("arguments[0].click();", button)
+                #button.click()
+                time.sleep(random.randint(3,6))
+                HTML = driver.page_source
+                soup = BeautifulSoup(HTML, features="html.parser")
+                LectDescBlock = soup.find_all('div', {'class' : 'ProductLectureList-Lecture-Content'})
+                i = 0
+                for block in LectDescBlock:
+                    if i < k:
+                        i += 1 
+                        continue
+                    else:
+                        LectureDescriptions.append(block.getText())
+                        break
+                k += 1
+            except Exception as e: 
+                LectureDescriptions.append(str(e))
+                k += 1
+                continue
+    
+        return LectureDescriptions
+
+    def getLecturerInfoPhoto(self, driver, HTML):
+        multProfs = "Professor 1 of "
+        LecturerDict = {'name' : [], 'role' : [], 'img' : []}
+        
+        soup = BeautifulSoup(HTML, features="html.parser")
+        ProfessorBlock = soup.find('div', {'class' : 'ProductPage-Professor-Info'})
+        
+        if multProfs in ProfessorBlock.p.getText():
+        
+            ProfessorBlocks = soup.find_all('div', {'class' : 'ProductPage-Professor-Info'})
+            for ProfessorBlock in ProfessorBlocks: 
+                LecturerDict['name'].append(ProfessorBlock.h2.getText())
+                
+                
+                roleBlock = ProfessorBlock.find('p', { 'class' : 'ProductPage-Professor-Association' })  
+                LecturerDict['role'].append(roleBlock.getText().replace("Institution", ""))
+                    
+            ProfImageBlocks = soup.find_all('div', {'class' : 'ProductPage-Professor-Image'})
+            for ProfImageBlock in ProfImageBlocks:
+                LecturerDict['img'].append(ProfImageBlock.img['src'])
+                
+        else:         
+            # Name
+            LecturerDict['name'].append(ProfessorBlock.h2.getText())
+            # Institution (Directory)
+            LecturerDict['role'].append(ProfessorBlock.p.getText().replace("Institution", ""))
+            # Image Resource
+            ProfImageBlock = soup.find('div', {'class' : 'ProductPage-Professor-Image'})
+            LecturerDict['img'].append(ProfImageBlock.img['src'])
+            
+        return LecturerDict
+  
     def getGenre(self, cnum):
         subjs = []
         
@@ -313,6 +568,7 @@ class TGCAgent(Agent.TV_Shows):
 
         return subjs
     
+    '''
     def searchPlusURL(self, course, courseID):
         fixCourse = course
         sResultsSPAN = [ ]
@@ -451,7 +707,46 @@ class TGCAgent(Agent.TV_Shows):
             Log("NO TGC+ COURSE FOUND.")
             return None 
 
+       
+    def getLectureThumbs(self, url):
+        lectureThumbs = []
+        i=1
     
+        Log("Finding lecture thumbs URL: %s" % url)
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        requestPlus = urllib2.Request(url)
+        requestPlus.add_header('User-Agent', USER_AGENT)
+        try:
+            f = urllib2.urlopen(requestPlus, context=ctx)
+            htmlPlus = f.read()
+        except urllib2.HTTPError:        
+            Log("urllib2 HTTPError")
+            pass
+
+        soup = BeautifulSoup(htmlPlus)
+        lectureThumbBlock = soup.findAll('div', { 'class' : 'list-tray-item-image-container'} )
+        for lThumb in lectureThumbBlock:
+            link = lThumb.img
+            try: 
+                thumbImg = link['src']
+            except KeyError:
+                thumbImg = link['data-src']
+            Log("Lecture %s thumbURL: %s" % (i, thumbImg))
+            i += 1
+            lectureThumbs.append(thumbImg)
+       
+        if lectureThumbs:
+            Log("Found Lecture Thumbs! Quitting getLectureThumbs()")
+        else:
+            Log("No Lecture thumbs found at url: %s" % url)
+                
+        return lectureThumbs
+    '''  
+    
+
+
           
     def SearchCourse(self, mdatashow, cNum):
         course = mdatashow
@@ -601,12 +896,12 @@ class TGCAgent(Agent.TV_Shows):
             
 
     def update(self, metadata, media, lang):
-        lecturers = []
-        pNames = []
-        pNamesURL = []
-        lRoles = []
 
         Log("def update()")
+        global TABCOUNT
+        global UPDATEDONE
+        TABCOUNT += 1
+        Log("TAB: " + str(TABCOUNT))
         show = metadata.id
         mdatashow = show.replace('quot', '"')
         mdatashow = mdatashow.replace(' s ', "'s ")
@@ -623,7 +918,7 @@ class TGCAgent(Agent.TV_Shows):
             metadata.title = mdatashow
             cNum = 0
         #metadata.title = mdatashow
-        Log("metadata.title: %s" % metadata.title)
+        
         show = metadata.title
         show = show.lower()
         show = show.replace(':', '')
@@ -642,11 +937,96 @@ class TGCAgent(Agent.TV_Shows):
         Log("update() CourseURL: %s" % courseURL)
         #Log("update() CoursePlusURL: %s" % coursePlusURL)
 
-        ctx = ssl.create_default_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
-         
-        Log("calling urllib2 and visiting coursURL")
+        #ctx = ssl.create_default_context()
+        #ctx.check_hostname = False
+        #ctx.verify_mode = ssl.CERT_NONE
+        try: 
+            Log("Opening tab...")
+            if TABCOUNT > 1: 
+                Log("Multiple tabs open... Waiting...")
+                if wait_until(3600, .25):
+                    Log("Opening subsequent tab...")
+                    #driver.execute_script("window.open(''), '_blank'")
+                    #driver.switch_to.window(driver.window_handles[TABCOUNT - 1])
+                    driver.get(courseURL)
+                else:
+                    Log("A previous update() took too long. Try manually refreshing this courses metadata when all is said and done.")
+            else:
+                driver.get(courseURL)
+                global main_window
+                main_window = driver.current_window_handle
+            #driver = self.startWebDriver()
+            
+            # check for 404 error, if + then do a search for course
+            time.sleep(random.randint(12,17))
+            HTML = driver.page_source
+            
+            # Course Title
+            soup = BeautifulSoup(HTML, features="html.parser")
+            titleBlock = soup.find('div', {'class' : 'ProductPage-Header-Title'})
+            metadata.title = titleBlock.h1.getText() 
+            Log("metadata.title: %s" % metadata.title)
+        except Exception as e:
+            Log("Error fetching course URL: " + str(e))
+            display.stop()
+            sys.exit(314)
+ 
+        metadata.studio = "TGC"
+        try:
+            CourseDesc = self.getDESC(driver)
+            Log("Adding metadata summary...")
+            Log("Course Description: " + CourseDesc)
+            metadata.summary = CourseDesc
+        except Exception as e:
+            Log("Could not get Course Summary: " + str(e))
+            pass
+        
+        
+        try:
+            Log("Getting Lecture Titles...")
+            LectureTitles = self.getLectureTitles(driver)
+        except Exception as e:
+            Log("Could not get Lecture titles: " + str(e))
+            pass
+        
+    
+        try:
+            Log("Getting Lecture Descriptions...")
+            LectureDescriptions = self.getLectureDescs(driver) 
+        except Exception as e:
+            Log("Could not get Lecture Descriptions: " + str(e))
+            pass
+        
+        try: 
+            Log("Getting Lecturer(s) Info(s) and Photo(s)...")
+            LecturerDict = self.getLecturerInfoPhoto(driver, HTML)
+        except Exception as e:
+            Log("Error getting lecturer infos: " + str(e))
+        
+        Log("Populating actors and images...")
+        # populate the 'actors'
+        try: 
+            meta_people_obj = metadata.roles
+            for k in range(len(LecturerDict['name'])):
+                meta_people_obj.clear()
+                meta_role = meta_people_obj.new()
+                meta_role.name = LecturerDict['name'][k]
+                meta_role.role = LecturerDict['role'][k]
+                meta_role.photo = LecturerDict['img'][k]
+        except Exception as e:
+            Log("Could not set actor/director info: " + str(e))
+            
+        try: 
+            Log("Getting Rating...")
+            rating = self.getRating(HTML)
+            metadata.rating = float(rating / 10)
+        except Exception as e:
+            Log("Error getting and setting rating: " + str(e))
+            
+        
+        # Fix searchCourse()
+            
+        '''
         request = urllib2.Request(courseURL)
         request.add_header('User-Agent', USER_AGENT)
 #        opener = urllib2.build_opener()
@@ -668,46 +1048,25 @@ class TGCAgent(Agent.TV_Shows):
  
 #            opener = urllib2.build_opener()
 #            html = opener.open(request).read()
-            
-
-        data = self.getDESC(html)
-        Log("Adding metadata summary")
-        metadata.summary = data
-        
-        Log("Calling MyLDESCParser()")
-        parser = self.MyLDESCParser()
-        Log("Calling MyLTITLEarser()")
-        parser2 = self.MyLTITLEParser()
-        Log("Calling MyLDESCParser().feed(html)")
-        parser.feed(html)
-        Log("Calling MyLTITLEarser().feed(html)")
-        parser2.feed((html))
+                
         '''
-        Log("Finding lecturers and lecturer photos...")
-        proDict = self.getLecturer(html, metadata.roles)
-        if proDict['Num'] == "1":
-            pName = proDict['Lecturer']
-            lrole = proDict['Role']
-            pURL = proDict['Photo']
-            lecturer = pName
+        
+        
+        # this just keeps it simple so there is less code rewriting in 
+        # updating the episode (lecture) infos
+        if LectureTitles is not None and LectureDescriptions is not None:
+            eSummaryData = LectureDescriptions
+            eTitleData = LectureTitles
         else:
-            lecturer = "many"
-            pNames = proDict['Lecturer']
-            pURL = None
-        '''         
-        lecturer="none"
-        Log("Getting Rating...")
-        rating = self.getRating(html)
-        metadata.rating = float(rating)    
+            Log("No lecture title or description info")
         
-        metadata.studio = "TGC"
         
-        eSummaryData = parser.data
-        eTitleData = parser2.data
+        # Add TGC+ Search for genre and other infos
+        coursePlusInfo = None
         
         #Log("Visiting TGC+ companion website if it exists...")
         #coursePlusInfo = self.searchPlusURL(metadata.title, cNum)
-        coursePlusInfo = None
+        '''
         if coursePlusInfo is not None:
             metadata.genres = [coursePlusInfo['TAX1'], coursePlusInfo['TAX2']]
             lThumbs = self.getLectureThumbs(coursePlusInfo['URL'])
@@ -723,10 +1082,13 @@ class TGCAgent(Agent.TV_Shows):
         else:
             Log('No Course ID, so no genres!')
                 
+        '''
+        
+        
         
         Log("Updating episode data")
         @parallelize
-        def UpdateEpisodes(html=html, eSummaryData=eSummaryData, eTitleData=eTitleData, lecturer=lecturer):
+        def UpdateEpisodes(html=HTML, eSummaryData=eSummaryData, eTitleData=eTitleData):
             Log("def UpdateEpisodes()")
             if media is not None:
                 Log("Media is not None")
@@ -740,10 +1102,9 @@ class TGCAgent(Agent.TV_Shows):
                             episode = metadata.seasons[str(season_num)].episodes[str(episode_num)]
                             Log("Running UpdateEpisode...")
                             @task
-                            def UpdateEpisode(episode=episode, html=html, episode_num=episode_num, eSummaryData=eSummaryData, eTitleData=eTitleData, lecturer=lecturer):
+                            def UpdateEpisode(episode=episode, html=html, episode_num=episode_num, eSummaryData=eSummaryData, eTitleData=eTitleData):
                                 Log("def UpdateEpisode()")
                                 lecture_len = len(eSummaryData)
-                                lecture_len2 = len(eTitleData)
                                 Log("Lecture array length: %s" % lecture_len)
                                 if int(episode_num) <= lecture_len:
                                     Log("Episode Title: %s" % eTitleData[int(episode_num) - 1])
@@ -751,9 +1112,10 @@ class TGCAgent(Agent.TV_Shows):
                                     episode.title = str(eTitleData[int(episode_num) - 1 ])
                                     episode.summary = str(eSummaryData[int(episode_num) - 1].strip())
                                     if episode.rating is None:
-                                        episode.rating = float(rating)
+                                        episode.rating = float(rating / 10)
                                     Log("episode.summary: %s" % episode.summary)
                                     Log("episode.title: %s" % episode.title)
+                                    '''
                                     Log("Getting lecture thumb image")
                                     if not lThumbs:
                                         Log("No Episode thumbs avaialbe")
@@ -765,10 +1127,10 @@ class TGCAgent(Agent.TV_Shows):
                                             except: 
                                                 Log("Download of thumb image failed! - %s" % lThumbs[int(episode_num)])
                                                 pass
-                                        
-                                    Log("Getting Lecturer")
+                                    '''    
+                                    #Log("Getting Lecturer")
+                                
                                 '''
-
                                 Log("Lecturer: %s" % lecturer)
                                 #episode.directors.clear()
                                 #episode.writers.clear()
@@ -805,12 +1167,43 @@ class TGCAgent(Agent.TV_Shows):
                                     Log("For episode: %s the date is %s" % (episode_num, episode.originally_available_at))
                         else:
                             Log("I do not update episodes 0. No Information to retrieve.")    
-                Log("getting Art images")
                     
                     
         #episode.rating = rating
-        Log("Downloading Art")
+        
+        Log("Downloading Art...")
         @parallelize
+        def DownloadArt(coursenum=cNum):
+            valid_posters = []
+            arturl = "https://secureimages.teach12.com/tgc/images/m2/courses/high/" + str(coursenum) + ".jpg"
+            @task
+            def DownloadPoster(poster_url=arturl, filePath=FinalPoster):
+                Log("Downloading poster...")
+                try:
+                    c = urllib3.PoolManager()
+                    #metadata.posters[poster_url] = Proxy.Preview(HTTP.Request(poster_url).content, sort_order=1)
+                    courseArt = CourseArt + "-" + coursenum + ".jpg"
+                    with c.request('GET', poster_url, preload_content=False) as res, open(courseArt, 'wb') as out_file:
+                        shutil.copyfileobj(res, out_file)
+                    self.processPoster(coursenum, courseArt)
+                    
+                    # Load the file
+                    time.sleep(random.randint(7,14))
+                    data = Core.storage.load(FinalPoster)
+                    poster_name = hashlib.md5(data).hexdigest()
+                    valid_posters.append(poster_name)
+                    if poster_name not in metadata.posters:
+                        metadata.posters[poster_name] = Proxy.Media(data)
+                        metadata.art[poster_name] = Proxy.Media(data)
+			Log("Proxy.Media(data) - FIGURE THIS OUT")
+                    #metadata.posters[poster_url] = Proxy.Preview(HTTP.Request(FinalPoster).content, sort_order=1)
+                except Exception as e:
+                    Log("Download of poster image failed! - %s" % arturl)
+                    Log("ERROR: " + str(e))
+                    pass
+            metadata.posters.validate_keys(valid_posters)
+            metadata.art.validate_keys(valid_posters)
+        '''
         def DownloadArt(html=html):
             Log("DownloadArt()")
             art = [ ]
@@ -847,6 +1240,15 @@ class TGCAgent(Agent.TV_Shows):
             else:
                 Log("Fanart already in metadata.art")                        
             metadata.art.validate_keys(Art['fanart'])
+        '''
             
-        Log("Done")    
-        return
+        Log("Cleaning up...")
+        #if TABCOUNT > 1:
+        #    time.sleep(random.randint(15,60))
+        #    driver.find_element_by_tag_name('body').send_keys(Keys.CONTROL + 'w')
+        #display.stop()
+        #self.Stop()
+        Log("Done")
+        UPDATEDONE = True
+        TABCOUNT = TABCOUNT - 1
+        #return
