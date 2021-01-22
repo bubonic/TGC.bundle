@@ -6,6 +6,11 @@ The agent makes use of many shared libraries including Selenium, Whichcraft, pyv
 ## NOTE
 You must use **Firefox 60.0** and **Geckodriver 0.26**. Newer Firefox versions may not work with the Selenium suite that this agent uses (**Selenium 3.141.0**). It was very time consuming to find the appropriate versions of Selenium, Firefox and Geckodriver that all worked together on a Linux Machine.
 
+### Note 2
+This has only been tested on Linux, Ubuntu 20.04 machine with the version *Version 1.21.1.3876* of the PLEX Media Server.
+If it is not working or something wrong happens, Please review the agent and system logs of PLEX and post them in the issues section. 
+
+
 # Requirements
 ## Linux
 - X11 or Xvfb (headless)
