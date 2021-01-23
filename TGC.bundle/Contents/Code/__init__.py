@@ -34,8 +34,10 @@ from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from bs4 import BeautifulSoup
 
 
-# EDIT THESE
+# EDIT TH
 FIREFOX = "/usr/local/bin/firefox/firefox"
+
+# You can leave these alone or edit them if you feel like doing so
 GECKODRIVER = "/usr/local/bin/geckodriver"
 CONVERT = "/usr/bin/convert"
 
@@ -107,8 +109,12 @@ def Start():
         Log("ImageMagick is installed.")
     
     if is_tool("geckodriver") is None:
-        Log("Please install geckodriver")
-        sys.exit(7)
+        if PLATFORM != "Windows":
+            Log("Please install geckodriver")
+            sys.exit(7)
+        else:
+            Log("Assuming geckodriver location is: " + str(GECKODRIVER))
+            Log("Edit the variable if not correct")
     else:
         global GECKODRIVER
         GECKODRIVER = is_tool("geckodriver")
