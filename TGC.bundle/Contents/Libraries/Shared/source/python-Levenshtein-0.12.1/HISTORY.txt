@@ -1,0 +1,52 @@
+============
+ Changelog
+============
+
+0.12.1
+------
+
+* Fixed handling of numerous possible wraparounds in calculating the size
+  of memory allocations; incorrect handling of which could cause denial
+  of service or even possible remote code execution in previous versions
+  of the library.
+
+0.12.0
+------
+
+* Fixed a bug in StringMatcher.StringMatcher.get_matching_blocks /
+  extract_editops for Python 3; now allow only `str` editops on
+  both Python 2 and Python 3, for simpler and working code.
+
+* Added documentation in the source distribution and in GIT
+
+* Fixed the package layout: renamed the .so/.dll to _levenshtein,
+  and made it reside inside a package, along with the StringMatcher
+  class.
+
+* Fixed spelling errors.
+
+0.11.2
+------
+
+* Fixed a bug in setup.py: installation would fail on Python 3 if the locale
+  did not specify UTF-8 charset (Felix Yan).
+
+* Added COPYING, StringMatcher.py, gendoc.sh and NEWS in MANIFEST.in, as they
+  were missing from source distributions.
+
+0.11.1
+------
+
+* Added Levenshtein.h to MANIFEST.in
+
+0.11.0
+------
+
+* Python 3 support, maintainership passed to Antti Haapala
+
+0.10.1 - 0.10.2
+---------------
+
+* Made python-Lehvenstein Git compatible and use setuptools for PyPi upload
+
+* Created HISTORY.txt and made README reST compatible

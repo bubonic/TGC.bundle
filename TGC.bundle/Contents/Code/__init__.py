@@ -22,6 +22,9 @@ import subprocess
 import hashlib
 import platform
 
+import Levenshtein as lev 
+
+
 from io import open
 from whichcraft import which
 
@@ -34,7 +37,7 @@ from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from bs4 import BeautifulSoup
 
 
-# EDIT TH
+# EDIT THIS
 FIREFOX = "/usr/local/bin/firefox/firefox"
 
 # You can leave these alone or edit them if you feel like doing so
@@ -51,6 +54,10 @@ TGC_PLUS_ALL_URL = 'https://www.thegreatcoursesplus.com/categories'
 TGC_PLUS_URL2 = 'https://www.thegreatcoursesplus.com/'
 TGC_PLUS_URL1 = 'https://www.thegreatcoursesplus.com/show/'
 USER_AGENT = 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:49.0) Gecko/20100101 Firefox/49.0'
+SEARCHURL = "https://www.thegreatcourses.com/search/"
+BASEURL = "http://www.thegreatcourses.com"
+JAROMIN = .811337
+
 ONE_DAY = datetime.timedelta(days=1)
 TODAY = datetime.date.today()
 TGCDB = 'https://drive.google.com/uc?export=download&id=0B0iKKQfjnk-ANGc4ZGxNa3pQZWc'
@@ -78,7 +85,7 @@ gecko_binary = os.path.abspath(GECKODRIVER)
 
 # Platform
 PLATFORM = platform.system()
-CMDFINDER = "where" if platform.system() == "Windows" else "which"
+#CMDFINDER = "where" if platform.system() == "Windows" else "which"
 #product_category = {'901' : "Economics & Finance", '902' : 'High School', '904' : 'Fine-Arts', '905' : 'Literature & Language', '907' : 'Philosophy, Intellectual History','909' : 'Religion', '910' : 'Mathematics', '918' : 'History', '926': 'Science', '927': 'Better Living'   }
 def is_tool(name):
 
@@ -166,224 +173,7 @@ class TGCAgent(Agent.TV_Shows):
     languages = [Locale.Language.English]
     primary_provider = True
     accepts_from = ['com.plexapp.agents.localmedia']
-    '''
-    class MyDESCParser(HTMLParser):
-        def __init__(self):
-            HTMLParser.__init__(self)
-            self.recording = 0
-            self.data = []
-
-        def handle_starttag(self, tag, attributes):
-            if tag != 'div':
-                return
-            if self.recording:
-                self.recording = self.recording + 1
-                return
-            for name, value in attributes:
-                if name == 'class' and value == 'course-description':
-                    break
-            else:
-                return
-            self.recording = 1
-
-        def handle_endtag(self, tag):
-            if tag == 'div' and self.recording:
-                self.recording = self.recording - 1
-
-        def handle_data(self, data):
-            if self.recording:
-                self.data.append(data)
-    
-    class MyLTITLEParser(HTMLParser):
-        def __init__(self):
-            HTMLParser.__init__(self)
-            self.recording = 0
-            self.data = []
-            self.newdata = 0
-            self.c = ''
-            self.c2 = ''
-            self.newdata2 = []
-            self.switch = 0
-
-        def handle_starttag(self, tag, attributes):
-            if tag != 'div':
-                return
-            if self.recording:
-                self.recording = self.recording + 1
-                return
-            for name, value in attributes:
-                if name == 'class' and value == 'lecture-title':
-                    self.switch = 0
-                    break
-            else:
-                return
-            self.recording = 1
-
-        def handle_endtag(self, tag):
-            if tag == 'div' and self.recording:
-                self.recording = self.recording - 1
-
-        def handle_data(self, data):
-            if self.recording:
-                if data and data != 'x':
-                    if self.switch == 1:
-                        last = self.data.pop()
-                        self.newdata = ' '. join([last, data])
-                        self.data.append(self.newdata)
-                        self.switch = 0
-                    else:
-                        self.data.append(data)
-
-        def handle_entityref(self, ref):
-            # called for each entity reference, e.g. for "&copy;", ref will be "copy"
-            if ref in ('lt', 'gt', 'quot', 'amp', 'apos'):
-                text = '&%s;' % ref
-            else:
-                # entity resolution graciously donated by Aaron Swartz
-                def name2cp(k):
-                    import htmlentitydefs
-                    k = htmlentitydefs.entitydefs[k]
-                    if k.startswith("&#") and k.endswith(";"):
-                        return int(k[2:-1]) # not in latin-1
-                    return ord(k)
-                try: name2cp(ref)
-                except KeyError: text = "&%s;" % ref
-                else: text = unichr(name2cp(ref)).encode('utf-8')
-            self.c = text
-            if self.data and self.recording:
-                last = self.data.pop()
-                self.newdata = ''.join([last,self.c])
-                self.data.append(self.newdata)
-                #print "Newdata:     ", self.newdata
-                self.switch = 1
-
-        def handle_charref(self, name):
-            if name.startswith('x'):
-                self.c2 = chr(int(name[1:], 16))
-            else:
-                try:
-                    self.c2 = chr(int(name))
-                except (TypeError, ValueError):
-                    Log("unknown character")
-
-            if self.data and self.recording:
-                last = self.data.pop()
-                self.newdata2 = ''.join([last,self.c2])
-                self.data.append(self.newdata2)
-                self.switch = 1
-
-    class MyLDESCParser(HTMLParser):
-        def __init__(self):
-            HTMLParser.__init__(self)
-            self.recording = 0
-            self.data = []
-            self.newdata = 0
-            self.newdata2 = 0
-            self.c = ''
-            self.c2 = ''
-            self.switch = 0
-
-        def handle_starttag(self, tag, attributes):
-            if tag == 'em' and self.recording:
-                self.switch = 1
-            if tag != 'div':
-                return
-            if self.recording:
-                self.recording = self.recording + 1
-                return
-            for name, value in attributes:
-                if name == 'class' and value == 'lecture-description-block left' or value == 'lecture-description-block right':
-                    break
-            else:
-                return
-            self.recording = 1
-
-        def handle_endtag(self, tag):
-            if tag == 'a' and self.recording:
-                self.recording = self.recording - 1
-            elif tag == 'em' and self.recording:
-                self.switch = 1
-
-        def handle_data(self, data):
-            if self.recording:
-                if data and data != 'x' and data != ' ':
-                    if self.switch == 1:
-                        last = self.data.pop()
-                        self.newdata = ''. join([last, data])
-                        self.data.append(self.newdata)
-                        self.switch = 0
-                    else:
-                        data.strip()
-                        self.data.append(data)
-
-
-        def handle_entityref(self, ref):
-            # called for each entity reference, e.g. for "&copy;", ref will be "copy"
-            if ref in ('lt', 'gt', 'quot', 'amp', 'apos'):
-                text = '&%s;' % ref
-            else:
-                # entity resolution graciously donated by Aaron Swartz
-                def name2cp(k):
-                    import htmlentitydefs
-                    k = htmlentitydefs.entitydefs[k]
-                    if k.startswith("&#") and k.endswith(";"):
-                        return int(k[2:-1]) # not in latin-1
-                    return ord(k)
-                try: name2cp(ref)
-                except KeyError: text = "&%s;" % ref
-                else: text = unichr(name2cp(ref)).encode('utf-8')
-            self.c = text
-            if self.data and self.recording:
-                last = self.data.pop()
-                self.newdata = ''.join([last,self.c])
-                self.data.append(self.newdata)
-                #print "Newdata:     ", self.newdata
-                self.switch = 1
-
-
-        def handle_charref(self, name):
-            if name.startswith('x'):
-                self.c2 = chr(int(name[1:], 16))
-            else:
-                try:
-                    self.c2 = chr(int(name))
-                except (TypeError, ValueError):
-                    Log("unknown character")    
-            if self.data and self.recording:
-                last = self.data.pop()
-                self.newdata2 = ''.join([last,self.c2])
-                self.data.append(self.newdata2)
-                self.switch = 1
-
-    class MyLecturerParser(HTMLParser):
-        def __init__(self):
-            HTMLParser.__init__(self)
-            self.recording = 0
-            self.data = []
-
-        def handle_starttag(self, tag, attributes):
-            if tag != 'span':
-                return
-            if self.recording:
-                self.recording = self.recording + 1
-                return
-            for name, value in attributes:
-                if name == 'class' and value == 'name':
-                    break
-            else:
-                return
-            self.recording = 1
-
-        def handle_endtag(self, tag):
-            if tag == 'span' and self.recording:
-                self.recording = self.recording - 1
-
-        def handle_data(self, data):
-            if self.recording:
-                self.data.append(data.strip())
-    
-    '''
-    
+   
     def processPoster(self, coursenum, courseArt):
         # if i can get PIL to import I'll use this. 
         '''
@@ -753,7 +543,7 @@ class TGCAgent(Agent.TV_Shows):
     
 
 
-          
+    '''      
     def SearchCourse(self, mdatashow, cNum):
         course = mdatashow
         fixCourse = course
@@ -870,6 +660,120 @@ class TGCAgent(Agent.TV_Shows):
 
                     
         return Results
+    '''
+    def scrollWindow(self, driver, scroll):
+        a = 1.7
+        b = 4.7
+        i = 0
+        courseURLs = []
+        courseTitles = []
+        courseDict = { }
+        # Get scroll height
+        #last_height = driver.execute_script("return document.body.scrollHeight")
+        scrollCount = 0
+        while True:
+            # Scroll down to bottom
+            #driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            driver.execute_script("window.scrollBy(0,314);")
+    
+            # Wait to load page
+            time.sleep(random.randint(a*10,b*10)/10)
+    
+            HTML = driver.page_source
+            
+            soup = BeautifulSoup(HTML, features="html.parser")
+            postsBlock = soup.find_all('a', {'class': 'CourseTile-TitleLink'})
+            for spblock in postsBlock:
+                courseURLs.insert(i, spblock['href'])
+                courseTitles.insert(i, spblock.getText())
+                courseDict[spblock.getText()] = spblock['href']
+                #print(postURLs[i])
+                i += 1        
+            # Calculate new scroll height and compare with last scroll height
+            scrollCount += 1
+            if scrollCount > int(scroll):
+                break
+            
+        courseURLs = list(dict.fromkeys(courseURLs))
+        courseTitles = list(dict.fromkeys(courseTitles))
+        return courseDict
+
+    def SearchCourse(self, title, driver):
+        reCourse = re.search('TGC[0-9]{1,4}', title, re.IGNORECASE)
+        if reCourse is not None:
+            rg = re.compile("TGC", re.IGNORECASE)
+            courseno = rg.split(title)[-1].replace(')', '')
+
+            rawTitle = rg.split(title)[0]
+            rawTitle = rawTitle.replace('(', '')
+            rawTitle = rawTitle.replace(')', '')
+            Log("Raw Tit: " + rawTitle)
+        else:
+            rawTitle = title
+            Log("Raw Tit: " + rawTitle)
+        
+        reTitle = re.search('TTC -', rawTitle, re.IGNORECASE)
+        
+        if reTitle is not None:
+            retit = re.compile('TTC -', re.IGNORECASE)
+            bareTit = retit.split(rawTitle)[-1].lstrip()
+        else:
+            bareTit = rawTitle
+            
+        bareTit = re.sub(r'\([^)]*\)', '',bareTit)
+        bareTit = re.sub(r'\[[^)]*\]', '',bareTit)
+        bareTit = re.sub(r'\([^)]*', '',bareTit)
+    
+        bareTit = bareTit.replace("--", "-")
+        bareTit = bareTit.replace("_", ",")
+        bareTits = bareTit.split("-")
+        
+        urlTit = bareTit.replace(' ', '%20')
+        urlTit = SEARCHURL + urlTit
+            
+        Log("BareTit: " + bareTit)
+        Log("Search URL: " + urlTit)
+        
+        Log("Searching for course...")
+        driver.get(urlTit)
+        time.sleep(random.randint(7,14))
+        courseDict = self.scrollWindow(driver, 5)
+        k = 0
+        jaroDict = {}
+        for key, url in courseDict.items():
+            jaro_value1 = lev.jaro(bareTits[0].encode('utf-8').lstrip(), key.encode('utf-8'))
+            try :
+                jaro_value2 = lev.jaro(bareTits[1].encode('utf-8').lstrip(), key.encode('utf-8'))
+            except:
+                jaro_value2 = 0.0
+            jaro_value3 = lev.jaro(bareTit.encode('utf-8').lstrip(), key.encode('utf-8'))
+            jaro_max_value = max(jaro_value1, jaro_value2, jaro_value3)
+            jaroDict[key] = jaro_max_value
+            Log("Title: " + key + ", URL: " + url)
+            Log("Jaro Value: " + str(jaroDict[key]))
+    
+            k += 1
+        
+        # find max jaro value
+        maxjaro = max(jaroDict.values())
+        res = [(k, v) for k, v in jaroDict.items() if v == maxjaro]
+        Log("------------------Result--------------------")
+        result_tuple = res[0]
+        keyresult = result_tuple[0]
+        result_url = courseDict[keyresult]
+        acceptableAnswerURL = BASEURL + result_url
+        if maxjaro > JAROMIN: 
+            Log("MATCH FOUND!")
+            Log("Title: " + keyresult + ", URL: " + BASEURL + result_url + ", Jaro: " + str(maxjaro))
+            Results = {'title' : keyresult, 'url' : acceptableAnswerURL, 'jaro' : maxjaro}
+        else:
+            Log("No signifcant match found, skipping...")
+            Results = None
+            #print("MaxJaro was: %s" % maxjaro)
+            #print("Title: %s \nURL: %s \nJaro: %s" % (keyresult, BASEURL + result_url, maxjaro))
+        
+        return Results    
+    
     
     def search(self, results, media, lang, manual=False):
         id2 = media.show
@@ -919,13 +823,13 @@ class TGCAgent(Agent.TV_Shows):
             #cNum = cNum.replace(']','')
             #cNum = cNum.split('TGC',1)[-1]
             Log("Course Number: %s"  % cNum)
-            metadata.title = rg.split(mdatashow)[0]
+            searchableTit = rg.split(mdatashow)[0]
         else:
-            metadata.title = mdatashow
+            searchableTit = mdatashow
             cNum = 0
         #metadata.title = mdatashow
         
-        show = metadata.title
+        show = searchableTit
         show = show.lower()
         show = show.replace(':', '')
         show = show.replace(',', '')
@@ -971,11 +875,30 @@ class TGCAgent(Agent.TV_Shows):
             soup = BeautifulSoup(HTML, features="html.parser")
             titleBlock = soup.find('div', {'class' : 'ProductPage-Header-Title'})
             metadata.title = titleBlock.h1.getText() 
-            Log("metadata.title: %s" % metadata.title)
+            Log("metadata.title: " + metadata.title)
         except Exception as e:
             Log("Error fetching course URL: " + str(e))
-            display.stop()
-            sys.exit(314)
+            Log("Searching...")
+            Result = self.SearchCourse(searchableTit, driver)
+            if Result is None:
+                Log("Nada, skipping...")
+                return 
+            else: 
+                courseURL = Result['url']
+                try: 
+                    driver.get(courseURL)
+                    time.sleep(random.randint(12,17))
+                    HTML = driver.page_source
+                    
+                    # Course Title
+                    soup = BeautifulSoup(HTML, features="html.parser")
+                    titleBlock = soup.find('div', {'class' : 'ProductPage-Header-Title'})
+                    metadata.title = titleBlock.h1.getText() 
+                    Log("metadata.title: " + metadata.title)
+                except:
+                    Log("IM having issues. Forgetting this one.")
+                    return
+            
  
         metadata.studio = "TGC"
         try:
@@ -1201,7 +1124,7 @@ class TGCAgent(Agent.TV_Shows):
                     if poster_name not in metadata.posters:
                         metadata.posters[poster_name] = Proxy.Media(data)
                         metadata.art[poster_name] = Proxy.Media(data)
-			Log("Proxy.Media(data) - FIGURE THIS OUT")
+			        #Log("Proxy.Media(data) - FIGURE THIS OUT")
                     #metadata.posters[poster_url] = Proxy.Preview(HTTP.Request(FinalPoster).content, sort_order=1)
                 except Exception as e:
                     Log("Download of poster image failed! - %s" % arturl)
