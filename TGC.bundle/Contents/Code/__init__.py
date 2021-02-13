@@ -210,7 +210,7 @@ class TGCAgent(Agent.TV_Shows):
             soup = BeautifulSoup(HTML, features='html.parser')
             ratingBlock = soup.find('div', {'class' : 'bv-percent-recommend-container'})
             rating = ratingBlock.getText().replace('% of reviewers recommend', '')
-            return int(rating)        
+            return float(rating)        
         except Exception as e:
             Log("Error getting rating: " + str(e))
             return int(0)
@@ -541,126 +541,6 @@ class TGCAgent(Agent.TV_Shows):
         return lectureThumbs
     '''  
     
-
-
-    '''      
-    def SearchCourse(self, mdatashow, cNum):
-        course = mdatashow
-        fixCourse = course
-        CN = 31337
-
-        sResults = { }
-        sResultsSPAN = [ ]
-        spanLen = [ ]
-        sTitleResults = [ ]
-        
-        
-        mdatashow = mdatashow.replace(':', '%3A')
-        mdatashow = mdatashow.replace('?', '%3F')
-        mdatashow = mdatashow.replace(',', '%2C')
-        mdatashow = mdatashow.replace(' ', '+')
-        
-        course = course.replace(':', '')
-        course = course.replace("'s", '')
-        course = course.replace('"', '')
-        course = course.replace(',', '')
-        course = course.replace('?', '')
-        course = course.replace('-', '')
-        course = course.replace('&', '.*')
-        course = course.replace('–', '' )
-        course = course.replace(' ', '.*')
-        course = course.replace('The', '.*')
-        course = course.replace ('the', '.*')
-        course = course.replace ('of', '.*')
-        course = ''.join(['.*', course])
-
-        ctx = ssl.create_default_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
-    
-        
-        searchURL = ''.join([TGC_SEARCH_URL,mdatashow])
-        request = urllib2.Request(searchURL)
-        request.add_header('User-Agent', USER_AGENT)
-        try:
-            f = urllib2.urlopen(request, context=ctx)
-            html = f.read()
-        except urllib2.HTTPError:        
-            Log("urllib2 HTTPError")
-            pass
-
-#        opener = urllib2.build_opener()
-#        html = opener.open(request, context=ctx).read()
-        
-        re_course = re.compile(course, re.DOTALL | re.IGNORECASE)
-        re_courseSet = re.compile("\(Set\)")
-        
-        soup = BeautifulSoup(html)
-        sresult = soup.findAll(attrs={"class": "item-inner"})
-        Log("Locating search results...")
-        
-        for link in sresult:
-            title = link.a['title']
-            Log("Title: %s" % link.a['title'])
-            re_course_match = re_course.match(title)
-            re_set_search = re_courseSet.search(title)
-            if re_course_match is not None and re_set_search is None:
-                Log("Match found for: %s" % fixCourse)
-                Log("Title found is: %s" % title)
-                Log("Link is: %s" % link.a['href'])
-                sResults.update({title: link.a['href']})
-                sResultsSPAN.append(re_course_match.span())
-                sTitleResults.append(title)
-        
-        Log("Finding best match...")
-        for spanR in sResultsSPAN:
-            spanLen.append(spanR[1] - spanR[0])
-            Log("Span length for is: %s" % spanLen[-1])
-            
-        cindex = spanLen.index(max(spanLen))
-        Results = {'title': sTitleResults[cindex], 'href': sResults[sTitleResults[cindex]]}
-        #cindex = max(xrange(len(spanLen)), key=spanLen.__getitem__)
-        #checking if there is a course number
-        if cNum != 0:
-            while (CN != cNum):
-
-                Log("CourseTitle is: %s" % sTitleResults[cindex])
-                Log("CourseURL is: %s" % sResults[sTitleResults[cindex]])
-
-                resultsURL = sResults[sTitleResults[cindex]]
-                request = urllib2.Request(resultsURL)
-                request.add_header('User-Agent', USER_AGENT)
-                try:
-                    f = urllib2.urlopen(request, context=ctx)
-                    html = f.read()
-                except urllib2.HTTPError:        
-                    Log("urllib2 HTTPError")
-                    pass    
-#                opener = urllib2.build_opener()
-#                html = opener.open(request).read()
-                soup = BeautifulSoup(html)
-  
-                #courseNum = soup.find("div", { "class" : "course-number" } )
-                #CN = courseNum.getText().split(';',1)[-1]
-                courseNum = soup.find("div", { "class" : "course-number" } )
-                if courseNum is not None:
-                    CN = courseNum.getText().split(';',1)[-1]
-                else:
-                    courseNum = soup.find("span", { "class" : "course-num" } )
-                    CN = courseNum.getText().split('No.', 1)[-1]
-                    CN = CN.split(';', 1)[-1].strip()
-                Log("Course Number Search: %s" % cNum)
-                Log("Course Number Found: %s" % CN)
-
-                if cNum == CN:
-                    Results = {'title': sTitleResults[cindex], 'href': sResults[sTitleResults[cindex]]}
-                else:
-                    del spanLen[cindex]
-                    cindex = spanLen.index(max(spanLen))
-
-                    
-        return Results
-    '''
     def scrollWindow(self, driver, scroll):
         a = 1.7
         b = 4.7
@@ -948,7 +828,9 @@ class TGCAgent(Agent.TV_Shows):
         try: 
             Log("Getting Rating...")
             rating = self.getRating(HTML)
+            Log("Rating is: " + str(rating))
             metadata.rating = float(rating / 10)
+            Log("Metadata.rating: " + str(metadata.rating))
         except Exception as e:
             Log("Error getting and setting rating: " + str(e))
             
