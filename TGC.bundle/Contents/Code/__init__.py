@@ -762,6 +762,8 @@ class TGCAgent(Agent.TV_Shows):
             Result = self.SearchCourse(searchableTit, driver)
             if Result is None:
                 Log("Nada, skipping...")
+                TABCOUNT -= 1
+                Log("Reducing TABCOUINT: " + str(TABCOUNT))
                 return 
             else: 
                 courseURL = Result['url']
@@ -837,32 +839,6 @@ class TGCAgent(Agent.TV_Shows):
         
         # Fix searchCourse()
             
-        '''
-        request = urllib2.Request(courseURL)
-        request.add_header('User-Agent', USER_AGENT)
-#        opener = urllib2.build_opener()
-        
-        try:
-#            html = opener.open(request).read()
-            f = urllib2.urlopen(request, context=ctx)
-            html = f.read() 
-        except urllib2.HTTPError:
-            Log("courseURL not found... Searching for related courses: %s" % metadata.title)
-            Results = self.SearchCourse(metadata.title, cNum)
-            Log("Course found, URL: %s" % Results['href'])
-            scourseURL = Results['href']
-            metadata.title = Results['title']
-            request = urllib2.Request(scourseURL)
-            request.add_header('User-Agent', USER_AGENT)
-            f = urllib2.urlopen(request, context=ctx)
-            html = f.read()
- 
-#            opener = urllib2.build_opener()
-#            html = opener.open(request).read()
-                
-        '''
-        
-        
         # this just keeps it simple so there is less code rewriting in 
         # updating the episode (lecture) infos
         if LectureTitles is not None and LectureDescriptions is not None:
@@ -986,6 +962,7 @@ class TGCAgent(Agent.TV_Shows):
         @parallelize
         def DownloadArt(coursenum=cNum):
             valid_posters = []
+            valid_art = []
             arturl = "https://secureimages.teach12.com/tgc/images/m2/courses/high/" + str(coursenum) + ".jpg"
             @task
             def DownloadPoster(poster_url=arturl, filePath=FinalPoster):
@@ -1005,53 +982,21 @@ class TGCAgent(Agent.TV_Shows):
                     valid_posters.append(poster_name)
                     if poster_name not in metadata.posters:
                         metadata.posters[poster_name] = Proxy.Media(data)
-                        metadata.art[poster_name] = Proxy.Media(data)
+                        
 			        #Log("Proxy.Media(data) - FIGURE THIS OUT")
                     #metadata.posters[poster_url] = Proxy.Preview(HTTP.Request(FinalPoster).content, sort_order=1)
+                    data = Core.storage.load(courseArt)
+                    art_name = hashlib.md5(data).hexdigest()
+                    valid_art.append(art_name)
+                    if art_name not in metadata.art:
+                        metadata.art[art_name] = Proxy.Media(data)
                 except Exception as e:
                     Log("Download of poster image failed! - %s" % arturl)
                     Log("ERROR: " + str(e))
                     pass
             metadata.posters.validate_keys(valid_posters)
-            metadata.art.validate_keys(valid_posters)
-        '''
-        def DownloadArt(html=html):
-            Log("DownloadArt()")
-            art = [ ]
-            Art = { }
-            soup = BeautifulSoup(html)
-            for link in soup.findAll("a", "cloud-zoom-gallery lightbox-group"):
-                art.append(link.get('href'))
-            Art['fanart'] = art[0]
-            Art['poster'] = art[1]
-            Log("Fanart URL: %s" % Art['fanart'])
-            Log("Poster URL: %s" % Art['poster'])
-            if Art['poster'] not in metadata.posters:
-                @task
-                def DownloadPoster(poster_url=Art['poster']):
-                    Log("Downloading posters")
-                    try:
-                        metadata.posters[poster_url] = Proxy.Preview(HTTP.Request(poster_url).content, sort_order=1)
-                    except: 
-                        Log("Download of poster image failed! - %s" % poster_url)
-                        pass
-            else:
-                Log("Poster art already in metadata.posters")
-            metadata.posters.validate_keys(Art['poster'])
-            
-            if Art['fanart'] not in metadata.art:
-                @task
-                def DownloadFanArt(fanart_url=Art['fanart']):
-                    Log("Downloading fanart")
-                    try:
-                        metadata.art[fanart_url] = Proxy.Preview(HTTP.Request(fanart_url).content, sort_order=1)
-                    except: 
-                        Log("Download of fanart image failed! - %s" % fanart_url)
-                        pass
-            else:
-                Log("Fanart already in metadata.art")                        
-            metadata.art.validate_keys(Art['fanart'])
-        '''
+            metadata.art.validate_keys(valid_art)
+ 
             
         Log("Cleaning up...")
         #if TABCOUNT > 1:
