@@ -22,7 +22,14 @@ import subprocess
 import hashlib
 import platform
 
-import Levenshtein as lev 
+try:
+    import Levenshtein as lev
+except:
+    Log("Couldn't Import Levenshtein Algorithm... You must be on a bunnk platform")
+    Log("SearchCourse() Will not work... ")
+    Log("Make sure you follow the proper naming scheme...")
+    Log("Skipping...")
+    pass 
 
 
 from io import open
@@ -37,10 +44,10 @@ from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from bs4 import BeautifulSoup
 
 
-# EDIT THIS
+# EDIT THIS TO THE PATH OF THE EXECUTABLE 
 FIREFOX = "/usr/local/bin/firefox/firefox"
 
-# You can leave these alone or edit them if you feel like doing so
+# You can leave these alone or edit them if you feel like doing so. PATH TO EXECUTABLE
 GECKODRIVER = "/usr/local/bin/geckodriver"
 CONVERT = "/usr/bin/convert"
 
@@ -215,7 +222,16 @@ class TGCAgent(Agent.TV_Shows):
             Log("Error getting rating: " + str(e))
             return int(0)
     
-    #def getDESC(self, html):
+    def getCourseNumber(self, HTML):
+        
+        soup = BeautifulSoup(HTML, features="html.parser")
+        
+        try :
+            return str(soup.find('p', {'class' : 'ProductPage-Header-CourseNumber'}).getText().replace("Course No. ", ''))
+        except Exception as e:
+            Log("Error Retrieving Course Number: " + str(e))
+            return 0
+            
     def getDESC(self, driver):
         Description = ''
         
@@ -762,8 +778,8 @@ class TGCAgent(Agent.TV_Shows):
             Result = self.SearchCourse(searchableTit, driver)
             if Result is None:
                 Log("Nada, skipping...")
-                TABCOUNT -= 1
-                Log("Reducing TABCOUINT: " + str(TABCOUNT))
+                TABCOUNT = TABCOUNT - 1
+                Log("Reducing TABCOUNT: " + str(TABCOUNT))
                 return 
             else: 
                 courseURL = Result['url']
@@ -783,6 +799,16 @@ class TGCAgent(Agent.TV_Shows):
             
  
         metadata.studio = "TGC"
+        
+        Log("Course Number from local metadata: " + str(cNum))
+        Log("Finding course number on courseURL...")
+        coursenum= self.getCourseNumber(HTML)
+        Log("Course Number: " + coursenum)
+        
+        if int(cNum) != int(coursenum) and int(coursenum) > 0:
+            cNum = coursenum
+    
+        
         try:
             CourseDesc = self.getDESC(driver)
             Log("Adding metadata summary...")
