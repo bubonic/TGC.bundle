@@ -22,6 +22,7 @@ import subprocess
 import hashlib
 import platform
 
+
 try:
     import Levenshtein as lev
 except:
@@ -89,6 +90,7 @@ firefox_binary = FirefoxBinary(os.path.abspath(FIREFOX))
 firefox_binary.add_command_line_options('--headless')
 gecko_binary = os.path.abspath(GECKODRIVER)
 
+global CURRENTTAB
 
 # Platform
 PLATFORM = platform.system()
@@ -220,7 +222,16 @@ class TGCAgent(Agent.TV_Shows):
             return float(rating)        
         except Exception as e:
             Log("Error getting rating: " + str(e))
-            return int(0)
+            return None
+    
+    def getStarsRating(self, HTML):
+        try: 
+            soup = BeautifulSoup(HTML, features='html.parser')
+            stars = soup.find('div', {'class' : 'Rating'}).getText()
+            return float(stars)
+        except Exception as e:
+            Log("Error getting stars: " + st(e))
+            return None
     
     def getCourseNumber(self, HTML):
         
@@ -738,30 +749,33 @@ class TGCAgent(Agent.TV_Shows):
         show = show.replace(' ', '-')
         courseURL = ''.join([TGC_COURSE_URL, show, '.html'])
         courseURL = courseURL.replace('-.html', '.html')
-        #coursePlusURL = ''.join([TGC_PLUS_COURSE_URL, show])
-        #coursePlusURL = coursePlusURL[:-1]
+        
         Log("update() CourseURL: %s" % courseURL)
-        #Log("update() CoursePlusURL: %s" % coursePlusURL)
+        
 
-        #ctx = ssl.create_default_context()
-        #ctx.check_hostname = False
-        #ctx.verify_mode = ssl.CERT_NONE
+        
         try: 
             Log("Opening tab...")
             if TABCOUNT > 1: 
                 Log("Multiple tabs open... Waiting...")
-                if wait_until(3600, .25):
+                if wait_until(TABCOUNT*600, .25):
                     Log("Opening subsequent tab...")
-                    #driver.execute_script("window.open(''), '_blank'")
-                    #driver.switch_to.window(driver.window_handles[TABCOUNT - 1])
                     driver.get(courseURL)
+                    global CURRENTTAB
+                    CURRENTTAB = driver.current_window_handle
                 else:
-                    Log("A previous update() took too long. Try manually refreshing this courses metadata when all is said and done.")
+                    Log("A previous update() took too long. Let's aim for the stars and try it anyway...")
+                    #driver.execute_script("window.open(''), '_blank'")
+                    driver.execute_script("window.open('"+courseURL+"', '__blank__');")
+                    global CURRENTTAB
+                    CURRENTTAB = driver.current_window_handle
+                    #driver.switch_to_window(driver.window_handles[TABCOUNT - 1])
+                    #driver.get(courseURL)
             else:
                 driver.get(courseURL)
-                global main_window
-                main_window = driver.current_window_handle
-            #driver = self.startWebDriver()
+                global CURRENTTAB
+                CURRENTTAB = driver.current_window_handle
+            
             
             # check for 404 error, if + then do a search for course
             time.sleep(random.randint(12,17))
@@ -780,6 +794,9 @@ class TGCAgent(Agent.TV_Shows):
                 Log("Nada, skipping...")
                 TABCOUNT = TABCOUNT - 1
                 Log("Reducing TABCOUNT: " + str(TABCOUNT))
+                if len(driver.window_handles) > 1:
+                    driver.close()
+                UPDATEDONE = True
                 return 
             else: 
                 courseURL = Result['url']
@@ -861,7 +878,38 @@ class TGCAgent(Agent.TV_Shows):
             Log("Metadata.rating: " + str(metadata.rating))
         except Exception as e:
             Log("Error getting and setting rating: " + str(e))
-            
+        
+        
+        Log("Getting Stars...")
+        stars = self.getStarsRating(HTML)
+        Log("Stars is: " + str(stars))
+        try:
+            metadata.user_rating = stars
+            Log("Metadata.stars: " + str(metadata.stars))
+        except:
+            try:
+                metadata.star_rating = stars
+                Log("Metadata.stars: " + str(metadata.star_rating))
+            except:
+                try: 
+                    metadata.rating_user = stars 
+                    Log("Metadata.stars: " + str(metadata.rating_user))
+                except:
+                    try: 
+                        metadata.rating_star = stars
+                        Log("Metadata.stars: " + str(metadata.rating_star))
+                    except:
+                        Log("all stars failed... Skipping...")
+                        try:
+                            metadata.rating.user = getStarsRating
+                        except:
+                            pass
+                        pass
+                    pass
+                pass
+            pass
+        
+                    
         
         # Fix searchCourse()
             
@@ -1032,5 +1080,8 @@ class TGCAgent(Agent.TV_Shows):
         #self.Stop()
         Log("Done")
         UPDATEDONE = True
+        Log("Driver Handles: "  + str(len(driver.window_handles)))
+        if len(driver.window_handles) > 1:
+            driver.close()
         TABCOUNT = TABCOUNT - 1
         #return
